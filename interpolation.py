@@ -1,9 +1,12 @@
 class VerticalGrid:
     """
-    Can be used independently to interpolate, or used inside functions 
-    in operators.py. 
+    Can be used independently to interpolate, or used inside functions
+    in operators.py.
     """
-    def __init__(self, gc_df, satellite_levels, centers_or_edges):
+
+    def __init__(
+        self, gc_df, satellite_pressure_edges, interpolate_to_centers_or_edges
+    ):
         # set satellite edges or centers
         self.__check_input_structure()
         # dim(satellite_levels) = nobs x nlevels

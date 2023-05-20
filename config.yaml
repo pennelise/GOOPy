@@ -1,7 +1,7 @@
 # Observations
 TROPOMIvXX: # version is specified for each instrument
-  CENTERS_OR_EDGES: 'edges'
-  VERTICAL_LEVELS: ''
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
+  PRESSURE_EDGES: '' 
   PRESSURE_WEIGHTING: ''
   LATITUDE: ''
   LONGITUDE: ''
@@ -9,8 +9,8 @@ TROPOMIvXX: # version is specified for each instrument
   PARSER: 'read_TROPOMIvXX'
 
 GOSATvXX: 
-  CENTERS_OR_EDGES: 'edges'
-  VERTICAL_LEVELS: ''
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
+  PRESSURE_EDGES: ''
   PRESSURE_WEIGHTING: ''
   LATITUDE: ''
   LONGITUDE: ''
@@ -18,8 +18,8 @@ GOSATvXX:
   PARSER: 'read_GOSATvXX'
 
 AIRSvXX:
-  CENTERS_OR_EDGES: 'edges'
-  VERTICAL_LEVELS: ''
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
+  PRESSURE_EDGES: ''
   PRESSURE_WEIGHTING: ''
   LATITUDE: ''
   LONGITUDE: ''
