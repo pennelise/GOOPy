@@ -1,0 +1,34 @@
+# Observations
+TROPOMIvXX: # version is specified for each instrument
+  CENTERS_OR_EDGES: 'edges'
+  VERTICAL_LEVELS: ''
+  PRESSURE_WEIGHTING: ''
+  LATITUDE: ''
+  LONGITUDE: ''
+  SATELLITE_COLUMN: ''
+  PARSER: 'read_TROPOMIvXX'
+
+GOSATvXX: 
+  CENTERS_OR_EDGES: 'edges'
+  VERTICAL_LEVELS: ''
+  PRESSURE_WEIGHTING: ''
+  LATITUDE: ''
+  LONGITUDE: ''
+  SATELLITE_COLUMN: ''
+  PARSER: 'read_GOSATvXX'
+
+AIRSvXX:
+  CENTERS_OR_EDGES: 'edges'
+  VERTICAL_LEVELS: ''
+  PRESSURE_WEIGHTING: ''
+  LATITUDE: ''
+  LONGITUDE: ''
+  SATELLITE_COLUMN: ''
+  PARSER: 'read_GOSATvXX'
+
+# Model
+MODEL: 
+  VERTICAL_LEVELS: ''
+  LATITUDE: ''
+  LONGITUDE: ''
+  DRY_AIR: ''
