@@ -28,7 +28,7 @@ AIRSvXX:
 
 # Model
 MODEL: 
-  VERTICAL_LEVELS: ''
+  PRESSURE_EDGES: ''
   LATITUDE: ''
   LONGITUDE: ''
   DRY_AIR: ''
