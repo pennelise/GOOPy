@@ -5,6 +5,7 @@ TROPOMIvXX: # version is specified for each instrument
   PRESSURE_WEIGHTING: ''
   LATITUDE: ''
   LONGITUDE: ''
+  TIME: ''
   SATELLITE_COLUMN: ''
   PARSER: 'read_TROPOMIvXX'
 
@@ -14,6 +15,7 @@ GOSATvXX:
   PRESSURE_WEIGHTING: ''
   LATITUDE: ''
   LONGITUDE: ''
+  TIME: ''
   SATELLITE_COLUMN: ''
   PARSER: 'read_GOSATvXX'
 
@@ -23,6 +25,7 @@ AIRSvXX:
   PRESSURE_WEIGHTING: ''
   LATITUDE: ''
   LONGITUDE: ''
+  TIME: ''
   SATELLITE_COLUMN: ''
   PARSER: 'read_GOSATvXX'
 
@@ -31,4 +34,5 @@ MODEL:
   PRESSURE_EDGES: ''
   LATITUDE: ''
   LONGITUDE: ''
+  TIME: ''
   DRY_AIR: ''

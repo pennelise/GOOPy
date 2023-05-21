@@ -8,9 +8,12 @@ with open("config.yml", "r", encoding="utf8") as f:
 
 def get_overlapping_pixels(sat_lat, sat_lon, gc_lat, gc_lon):
     pass
-    # calculate pixel which overlaps each satellite observation
+    # calculate pixels which overlap each satellite observation
     # assumes model pixel size >> satellite pixel size
 
+def get_closest_time(gc_time, sat_time):
+    pass
+    # get closest times in model to satellite times
 
 def get_satellite_column(
     gc_df,
@@ -28,6 +31,7 @@ def get_satellite_column(
         - all required satellite inputs as np arrays
     """
     # for nobs observations at one time:
+    # get closest model time
     # get overlapping pixels
     # get model column on satellite grid
     # apply averaging kernel and pressure weight
