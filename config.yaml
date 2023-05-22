@@ -1,33 +1,43 @@
 # Observations
 TROPOMIvXX: # version is specified for each instrument
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
-  PRESSURE_EDGES: '' 
-  PRESSURE_WEIGHTING: ''
-  LATITUDE: ''
-  LONGITUDE: ''
-  TIME: ''
-  SATELLITE_COLUMN: ''
   PARSER: 'read_TROPOMIvXX'
+  DATA_FIELDS: 
+    SURFACE_PRESSURE: 'surface_pressure'
+    DELTA_PRESSURE: 'dp' 
+    PRESSURE_WEIGHTING: 'dry_air_subcolumns'
+    LATITUDE: 'latitude_center'
+    LONGITUDE: 'longitude_center'
+    TIME: 'time'
+    AVERAGING_KERNEL: 'xch4_column_averaging_kernel'
+    PRIOR_PROFILE: 'ch4_profile_apriori'
+    SATELLITE_COLUMN: 'xch4'
 
 GOSATvXX: 
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
-  PRESSURE_EDGES: ''
-  PRESSURE_WEIGHTING: ''
-  LATITUDE: ''
-  LONGITUDE: ''
-  TIME: ''
-  SATELLITE_COLUMN: ''
   PARSER: 'read_GOSATvXX'
+  DATA_FIELDS:
+    PRESSURE_EDGES: 'pressure_levels'
+    PRESSURE_WEIGHTING: 'pressure_weight'
+    LATITUDE: 'latitude'
+    LONGITUDE: 'longitude'
+    TIME: 'time'
+    AVERAGING_KERNEL: 'xch4_averaging_kernel'
+    PRIOR_PROFILE: 'ch4_profile_apriori'
+    SATELLITE_COLUMN: 'xch4'
 
 AIRSvXX:
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
-  PRESSURE_EDGES: ''
-  PRESSURE_WEIGHTING: ''
-  LATITUDE: ''
-  LONGITUDE: ''
-  TIME: ''
-  SATELLITE_COLUMN: ''
   PARSER: 'read_GOSATvXX'
+  DATA_FIELDS:
+    PRESSURE_EDGES: ''
+    PRESSURE_WEIGHTING: ''
+    LATITUDE: ''
+    LONGITUDE: ''
+    TIME: ''
+    AVERAGING_KERNEL: ''
+    PRIOR_PROFILE: ''
+    SATELLITE_COLUMN: ''
 
 # Model
 MODEL: 
