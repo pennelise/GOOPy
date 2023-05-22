@@ -125,7 +125,7 @@ class VerticalGrid:
         # todo: Need to make sure you can apply all the a diagonal matrices at once.
         edges_to_centers = np.zeros_like(satellite_edges)
         edges_to_centers[:, 0] = satellite_edges[:, 0]
-        edges_to_centers[:, 1] = satellite_edges[:, 1]
+        edges_to_centers[:, -1] = satellite_edges[:, -1]
         edges_to_centers[:, 1:-1] = satellite_edges[:, :-1] - satellite_edges[:, 1:]
         centers_to_edges = 1 / edges_to_centers  # invert diagonal matrices
         return centers_to_edges
