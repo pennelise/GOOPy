@@ -1,6 +1,3 @@
-import numpy as np
-
-
 class VerticalGrid:
     """
     Can be used independently to interpolate, or used inside functions
@@ -29,6 +26,12 @@ class VerticalGrid:
             self.satellite_edges.ndim == 2
         ), "Satellite pressure edges must be 2D (nobs x nlevels), or 1D (nlevels)."
 
+        assert (
+            self.model_edges.shape[0] == self.satellite_edges.shape[0]
+        ), f"GEOS-Chem and satellite must have the same number of observations. "
+        f"GEOS-Chem nobs = {self.model_edges.shape[0]} "
+        f"Satellite nobs = {self.satellite_edges.shape[0]} "
+
         assert np.all(
             np.diff(self.model_edges) < 0
         ), "GEOS-Chem pressure levels must be in descending order."
@@ -36,19 +39,15 @@ class VerticalGrid:
             np.diff(self.satellite_edges) < 0
         ), "Satellite pressure levels must be in descending order."
 
-        assert self.model_edges.shape[0] == self.satellite_edges.shape[0], (
-            f"GEOS-Chem and satellite must have the same number of observations. "
-            f"GEOS-Chem nobs = {self.model_edges.shape[0]} "
-            f"Satellite nobs = {self.satellite_edges.shape[0]} "
-        )
-
     def __get_interpolation_map(self):
         return None
         # Hannah's GC_to_sat_levels function
+        # which is equivalent to W * M_in in Keppens
 
     def __centers_to_edges(self):
         return None
         # extra step not needed in all cases
+        # Same as M_out in Keppens
 
     def __handle_edge_cases(self):
         return None
