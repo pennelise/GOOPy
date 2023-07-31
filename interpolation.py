@@ -29,10 +29,14 @@ class VerticalGrid:
         self.__expand_profile_dims()
         self.__check_input_structure()
 
+        self.n_obs = self.model_ch4_layers.shape[0]
+        self.n_satellite_edges = self.satellite_edges.shape[1]
+        self.n_model_edges = self.model_edges.shape[1]
+
     def __expand_profile_dims(self):
         """
-        If profiles have only one observation, 
-        expand to a 2D array with dims (nobs x n_model edges) where n_obs=1.
+        If profiles have only one observation,
+        expand to a 2D array with dims (n_obs x n_model_edges) where n_obs=1.
         """
         if self.model_ch4_layers.ndim == 1:
             self.model_ch4_layers = np.expand_dims(self.model_ch4_layers, axis=0)
@@ -117,6 +121,8 @@ class VerticalGrid:
         # TROPOMI level. We should first divide (to normalize) and then
         # multiply (to apply the map to the column) by the GC pressure
         # difference, but we exclude this (since it's the same as x1).
+
+        # todo: I think we have to multiply to keep it consistent with the edges version
         model_to_satellite = np.minimum(satellite_high, model_high) - np.maximum(
             satellite_low, model_low
         )
@@ -124,19 +130,23 @@ class VerticalGrid:
 
         return model_to_satellite
 
-    @staticmethod
-    def __get_centers_to_edges_map(satellite_edges):
+    def __get_hprime_satellite_edges(self):
         """
-        equivalent to M_out* in Keppens et al. (2019).
-        Skip if you want result on layers/centers/partial columns.
+        Equivalent to hprime in equation 11 of of Keppens et al. (2019).
+
+        Creates n_satellite_edges+1 hprime levels with n_satellite_edges layers.
+
+        We interpolate to these layers instead of the actual layers, which ensures we
+        have full rank when we invert to satellite edges.
         """
         # todo: Need to make sure you can apply all the a diagonal matrices at once.
-        edges_to_centers = np.zeros_like(satellite_edges)
-        edges_to_centers[:, 0] = satellite_edges[:, 0]
-        edges_to_centers[:, -1] = satellite_edges[:, -1]
-        edges_to_centers[:, 1:-1] = satellite_edges[:, :-1] - satellite_edges[:, 1:]
-        centers_to_edges = 1 / edges_to_centers  # invert diagonal matrices
-        return centers_to_edges
+        hprime_edges = np.full((self.n_obs, self.n_satellite_edges + 1), 0.0)
+        hprime_edges[:, 1:-1] = 0.5 * (
+            self.satellite_edges[:, :-1] + self.satellite_edges[:, 1:]
+        )
+        hprime_edges[:, 0] = self.satellite_edges[:, 0]
+        hprime_edges[:, -1] = self.satellite_edges[:, -1]
+        return hprime_edges
 
     def interpolate(self):
         """
@@ -145,18 +155,26 @@ class VerticalGrid:
         Turns out neither of us use dry air for anything b/c it's neglibible for interpolation.
             Dry air only matters for the pressure weighting.
         """
-        clipped_model_edges = self.__clip_model_to_satellite_range(
-            model_edges=self.model_edges, satellite_edges=self.satellite_edges
-        )
-        model_to_satellite = self.__get_interpolation_map(
-            model_edges=clipped_model_edges, satellite_edges=self.satellite_edges
-        )
+        clipped_model_edges = self.model_edges
+        # clipped_model_edges = self.__clip_model_to_satellite_range(
+        #     model_edges=self.model_edges, satellite_edges=self.satellite_edges
+        # )
         if self.interpolate_to_centers_or_edges == "centers":
-            centers_to_edges = self.__get_centers_to_edges_map(
-                satellite_edges=self.satellite_edges
+            model_to_satellite_centers = self.__get_interpolation_map(
+                model_edges=clipped_model_edges, satellite_edges=self.satellite_edges
             )
+        elif self.interpolate_to_centers_or_edges == "edges":
+            hprime_satellite_edges = self.__get_hprime_satellite_edges()
+            model_to_satellite_centers = self.__get_interpolation_map(
+                model_edges=clipped_model_edges, satellite_edges=hprime_satellite_edges
+            )  # interpolates model to hprime satellite centers
+            centers_to_edges = 1 / np.abs(
+                np.diff(hprime_satellite_edges)
+            )  # M_out* in eq. 10 of Keppens et al. (2019)
         else:
-            centers_to_edges = None  # centers_to_edges = np.ones_like(<dims>)
+            raise ValueError(
+                f"interpolate_to_centers_or_edges must be 'centers' or 'edges', not {self.interpolate_to_centers_or_edges}"
+            )
 
         # Now map the GC CH4 to the satellite levels
         # todo: add centers to edges
