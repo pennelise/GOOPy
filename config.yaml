@@ -33,8 +33,10 @@ GOSATvXX:
 
 # Model
 MODEL: 
-  PRESSURE_EDGES: 'Met_PEDGEDRY'
+  LEVEL_EDGE_FILE_FORMAT: 'GEOSChem.LevelEdgeDiags.*_0000z.nc4' # 20150301
+  CH4_FILE_FORMAT: 'GEOSChem.SpeciesConc.*_0000z.nc4' #20150301
+  PRESSURE_EDGES: 'Met_PEDGE'
+  CH4_CENTERS: 'SpeciesConc_CH4'
   LATITUDE: 'lat'
   LONGITUDE: 'lon'
   TIME: 'time'
-  DRY_AIR: ''

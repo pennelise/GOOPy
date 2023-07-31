@@ -26,14 +26,20 @@ class VerticalGrid:
         self.satellite_edges = satellite_edges
         self.interpolate_to_centers_or_edges = interpolate_to_centers_or_edges
 
+        self.__expand_profile_dims()
+        self.__check_input_structure()
+
+    def __expand_profile_dims(self):
+        """
+        If profiles have only one observation, 
+        expand to a 2D array with dims (nobs x n_model edges) where n_obs=1.
+        """
         if self.model_ch4_layers.ndim == 1:
             self.model_ch4_layers = np.expand_dims(self.model_ch4_layers, axis=0)
         if self.model_edges.ndim == 1:
             self.model_edges = np.expand_dims(self.model_edges, axis=0)
         if self.satellite_edges.ndim == 1:
             self.satellite_edges = np.expand_dims(self.satellite_edges, axis=0)
-
-        self.__check_input_structure()
 
     def __check_input_structure(self):
         assert (
@@ -90,7 +96,9 @@ class VerticalGrid:
         Hannah's GC_to_sat_levels function
         Redistributes *and integrates* GEOS-Chem layers to satellite layers.
         Equivalent to W * M_in in Keppens et al. (2019) eq. X
+        DOUBLE CHECK this is actually W * M_in and not M_out * W
         """
+        # todo: DOUBLE CHECK this is actually W * M_in and not M_out * W
         # Define matrices with "low" and "high" pressure values for each layer.
         # shape: nobs x n_model_levels - 1 x n_satellite_levels - 1
         model_low = model_edges[:, 1:][:, :, None]
