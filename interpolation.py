@@ -155,10 +155,9 @@ class VerticalGrid:
         Turns out neither of us use dry air for anything b/c it's neglibible for interpolation.
             Dry air only matters for the pressure weighting.
         """
-        clipped_model_edges = self.model_edges
-        # clipped_model_edges = self.__clip_model_to_satellite_range(
-        #     model_edges=self.model_edges, satellite_edges=self.satellite_edges
-        # )
+        clipped_model_edges = self.__clip_model_to_satellite_range(
+            model_edges=self.model_edges, satellite_edges=self.satellite_edges
+        )
         if self.interpolate_to_centers_or_edges == "centers":
             model_to_satellite_centers = self.__get_interpolation_map(
                 model_edges=clipped_model_edges, satellite_edges=self.satellite_edges
