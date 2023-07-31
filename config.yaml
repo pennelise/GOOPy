@@ -1,0 +1,42 @@
+# Observations
+TROPOMIvXX: # version is specified for each instrument
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
+  PARSER: 'read_TROPOMIvXX'
+  DATA_FIELDS: 
+    N_OBS: 'nobs'
+    N_EDGES: 'nlevels'
+    N_CENTERS: 'nlayers'
+    SURFACE_PRESSURE: 'surface_pressure'
+    DELTA_PRESSURE: 'dp' 
+    PRESSURE_WEIGHTING: 'dry_air_subcolumns'
+    LATITUDE: 'latitude_center'
+    LONGITUDE: 'longitude_center'
+    TIME: 'time'
+    AVERAGING_KERNEL: 'xch4_column_averaging_kernel'
+    PRIOR_PROFILE: 'ch4_profile_apriori'
+    SATELLITE_COLUMN: 'xch4'
+
+GOSATvXX: 
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
+  PARSER: 'read_GOSATvXX'
+  DATA_FIELDS:
+    N_OBS: 'n'
+    N_EDGES: 'm'
+    PRESSURE_EDGES: 'pressure_levels'
+    PRESSURE_WEIGHTING: 'pressure_weight'
+    LATITUDE: 'latitude'
+    LONGITUDE: 'longitude'
+    TIME: 'time'
+    AVERAGING_KERNEL: 'xch4_averaging_kernel'
+    PRIOR_PROFILE: 'ch4_profile_apriori'
+    SATELLITE_COLUMN: 'xch4'
+
+# Model
+MODEL: 
+  LEVEL_EDGE_FILE_FORMAT: 'GEOSChem.LevelEdgeDiags.*_0000z.nc4' # 20150301
+  CH4_FILE_FORMAT: 'GEOSChem.SpeciesConc.*_0000z.nc4' #20150301
+  PRESSURE_EDGES: 'Met_PEDGE'
+  CH4_CENTERS: 'SpeciesConc_CH4'
+  LATITUDE: 'lat'
+  LONGITUDE: 'lon'
+  TIME: 'time'
