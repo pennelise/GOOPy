@@ -6,10 +6,17 @@ with open("config.yml", "r", encoding="utf8") as f:
     config = yaml.safe_load(f)
 
 
-def get_overlapping_pixels(sat_lat, sat_lon, gc_lat, gc_lon):
+def colocate_pixels(sat_lat, sat_lon, gc_lat, gc_lon):
+    pass
+    # get gridcells which are coincident with each satellite observation
+    # assumes model pixel size >> satellite pixel size
+
+
+def regrid_gc_to_sat_pixels(sat_lat, sat_lon, gc_lat, gc_lon):
     pass
     # calculate pixels which overlap each satellite observation
-    # assumes model pixel size >> satellite pixel size
+    # this is what the IMI does
+    # assumes model pixel size is close to satellite pixel size
 
 
 def get_closest_time(gc_time, sat_time):
