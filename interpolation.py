@@ -112,7 +112,6 @@ class VerticalGrid:
 
         # Get the indices where the GC-to-satellite mapping, which is
         # a nobs x ngc x nsat matrix, is non-zero
-        # # todo: is it non-zero for GOSAT too?
         idx = np.less_equal(satellite_low, model_high) & np.greater_equal(
             satellite_high, model_low
         )
@@ -139,7 +138,6 @@ class VerticalGrid:
         We interpolate to these layers instead of the actual layers, which ensures we
         have full rank when we invert to satellite edges.
         """
-        # todo: Need to make sure you can apply all the a diagonal matrices at once.
         hprime_edges = np.full((self.n_obs, self.n_satellite_edges + 1), 0.0)
         hprime_edges[:, 1:-1] = 0.5 * (
             self.satellite_edges[:, :-1] + self.satellite_edges[:, 1:]
@@ -171,19 +169,15 @@ class VerticalGrid:
             centers_to_edges = 1 / np.abs(
                 np.diff(hprime_satellite_edges)
             )  # M_out* in eq. 10 of Keppens et al. (2019)
+            # model_to_satellite_edges = centers_to_edges @ model_to_satellite_centers 
         else:
             raise ValueError(
                 f"interpolate_to_centers_or_edges must be 'centers' or 'edges', not {self.interpolate_to_centers_or_edges}"
             )
 
         # Now map the GC CH4 to the satellite levels
-        # todo: add centers to edges
-        model_column = None  # need to write this
-        # model_column = (model_to_satellite * self.methane_ch4_layers[:, :, None]).sum(
-        #     axis=1
-        # ) / model_to_satellite.sum(axis=1)
-        # interpolate model to satellite grid
-
+        model_column = (model_to_satellite * self.clipped_model_edges[:, :, None]).sum(
+            axis=1) / model_to_satellite.sum(axis=1)
         # todo: process in chunks of 1 million?
 
         return model_column
