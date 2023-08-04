@@ -22,6 +22,9 @@ def regrid_gc_to_sat_pixels(sat_lat, sat_lon, gc_lat, gc_lon):
 def get_closest_time(gc_time, sat_time):
     pass
     # get closest times in model to satellite times
+    # can potentially use this structure for fast time-matching:
+    # sron_v19_df_means["lat"] = np.round(sron_v19_df_means["lat"] / 0.25) * 0.25
+    # sron_v19_df_means["lon"] = np.round(sron_v19_df_means["lon"] / 0.3125) * 0.3125
 
 
 def get_model_columns(
