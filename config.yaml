@@ -8,7 +8,7 @@ TROPOMIvXX: # version is specified for each instrument
     N_CENTERS: 'nlayers'
     SURFACE_PRESSURE: 'surface_pressure'
     DELTA_PRESSURE: 'dp' 
-    PRESSURE_WEIGHTING: 'dry_air_subcolumns'
+    PRESSURE_WEIGHT: 'dry_air_subcolumns'
     LATITUDE: 'latitude_center'
     LONGITUDE: 'longitude_center'
     TIME: 'time'
@@ -16,20 +16,21 @@ TROPOMIvXX: # version is specified for each instrument
     PRIOR_PROFILE: 'ch4_profile_apriori'
     SATELLITE_COLUMN: 'xch4'
 
-GOSATvXX: 
+GOSATv9_0: 
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
-  PARSER: 'read_GOSATvXX'
+  PARSER: 'read_GOSATv9_0'
   DATA_FIELDS:
     N_OBS: 'n'
     N_EDGES: 'm'
     PRESSURE_EDGES: 'pressure_levels'
-    PRESSURE_WEIGHTING: 'pressure_weight'
+    PRESSURE_WEIGHT: 'pressure_weight'
     LATITUDE: 'latitude'
     LONGITUDE: 'longitude'
     TIME: 'time'
     AVERAGING_KERNEL: 'xch4_averaging_kernel'
     PRIOR_PROFILE: 'ch4_profile_apriori'
     SATELLITE_COLUMN: 'xch4'
+    QUALITY_FLAG: 'xch4_quality_flag'
 
 # Model
 MODEL: 
