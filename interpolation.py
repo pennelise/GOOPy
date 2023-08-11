@@ -6,9 +6,9 @@ class VerticalGrid:
     Can be used independently to interpolate, or used inside functions
     in operators.py.
 
-    model_ch4_layers:  nobs x n_model_edges-1,
-                       units: concentration-type (ppb, vmr, etc.)
-    satellite_edges:   nobs x n_satellite_edges
+    model_conc_at_layers: nobs x n_model_edges-1,
+                          units: concentration-type (ppb, vmr, etc.)
+    satellite_edges:      nobs x n_satellite_edges
                        units: pressure
     model_edges:       nobs x n_model_edges
                        units: pressure
@@ -16,12 +16,12 @@ class VerticalGrid:
 
     def __init__(
         self,
-        model_ch4_layers,
+        model_conc_at_layers,
         model_edges,
         satellite_edges,
         interpolate_to_centers_or_edges,
     ):
-        self.model_ch4_layers = model_ch4_layers
+        self.model_conc_at_layers = model_conc_at_layers
         self.model_edges = model_edges
         self.satellite_edges = satellite_edges
         self.interpolate_to_centers_or_edges = interpolate_to_centers_or_edges
@@ -29,7 +29,7 @@ class VerticalGrid:
         self.__expand_profile_dims()
         self.__check_input_structure()
 
-        self.n_obs = self.model_ch4_layers.shape[0]
+        self.n_obs = self.model_conc_at_layers.shape[0]
         self.n_satellite_edges = self.satellite_edges.shape[1]
         self.n_model_edges = self.model_edges.shape[1]
 
@@ -38,8 +38,10 @@ class VerticalGrid:
         If profiles have only one observation,
         expand to a 2D array with dims (n_obs x n_model_edges) where n_obs=1.
         """
-        if self.model_ch4_layers.ndim == 1:
-            self.model_ch4_layers = np.expand_dims(self.model_ch4_layers, axis=0)
+        if self.model_conc_at_layers.ndim == 1:
+            self.model_conc_at_layers = np.expand_dims(
+                self.model_conc_at_layers, axis=0
+            )
         if self.model_edges.ndim == 1:
             self.model_edges = np.expand_dims(self.model_edges, axis=0)
         if self.satellite_edges.ndim == 1:
@@ -47,7 +49,7 @@ class VerticalGrid:
 
     def __check_input_structure(self):
         assert (
-            self.model_ch4_layers.ndim == 2
+            self.model_conc_at_layers.ndim == 2
         ), "GEOS-Chem methane layers must be 2D (nobs x nlevels), or 1D (nlevels)."
         assert (
             self.model_edges.ndim == 2
@@ -66,70 +68,63 @@ class VerticalGrid:
         assert (
             self.model_edges.shape[0]
             == self.satellite_edges.shape[0]
-            == self.model_ch4_layers.shape[0]
+            == self.model_conc_at_layers.shape[0]
         ), (
             f"GEOS-Chem and satellite must have the same number of observations. "
-            f"model_ch4_layers nobs = {self.model_ch4_layers.shape[0]} "
+            f"model_ch4_layers nobs = {self.model_conc_at_layers.shape[0]} "
             f"model_edges nobs = {self.model_edges.shape[0]} "
             f"satellite_edges nobs = {self.satellite_edges.shape[0]} "
         )
-        assert self.model_ch4_layers.shape[1] + 1 == self.model_edges.shape[1], (
+        assert self.model_conc_at_layers.shape[1] + 1 == self.model_edges.shape[1], (
             "GEOS-Chem has mismatched vertical coordinates. "
             "model_ch4_layers should have one less vertical coordinate than model_edges."
         )
 
-    @staticmethod
-    def __clip_model_to_satellite_range(model_edges, satellite_edges):
+    def expand_model_to_satellite_range(self):
         """
         We want to account for the case when the GEOS-Chem surface
         is above the satellite surface (altitude wise) or the GEOS-Chem
-        top is below the satellite top.. We do this by adjusting the
-        GEOS-Chem surface pressure up to the TROPOMI surface pressure
+        top is below the satellite top. We do this by adjusting the
+        GEOS-Chem surface pressure up to the satellite surface pressure
         """
-        # # hannah's parallelized implementation
-        # # need to double check this is same as GOSAT method (it should be, but GOSAT skips more layers)
-        # idx_bottom = np.less(GC_edges[:, 0], sat_edges[:, 0])
-        # idx_top = np.greater(GC_edges[:, -1], sat_edges[:, -1])
-        # GC_edges[idx_bottom, 0] = sat_edges[idx_bottom, 0]
-        # GC_edges[idx_top, -1] = sat_edges[idx_top, -1]
-        # return None
+        idx_bottom = np.less(self.model_edges[:, 0], self.satellite_edges[:, 0])
+        idx_top = np.greater(self.model_edges[:, -1], self.satellite_edges[:, -1])
+
+        expanded_model_edges = self.model_edges.copy()
+        expanded_model_edges[idx_bottom, 0] = self.model_edges[idx_bottom, 0]
+        expanded_model_edges[idx_top, -1] = self.model_edges[idx_top, -1]
+        return expanded_model_edges
 
     @staticmethod
-    def __get_interpolation_map(model_edges, satellite_edges):
+    def get_interpolation_map(model_edges, satellite_edges):
         """
-        Hannah's GC_to_sat_levels function
-        Redistributes *and integrates* GEOS-Chem layers to satellite layers.
-        Equivalent to W * M_in in Keppens et al. (2019) eq. X
-        DOUBLE CHECK this is actually W * M_in and not M_out * W
+        Gets an interpolation map which converts from
+        GEOS-Chem concentrations at pressure centers to satellite partial columns.
+
+        interpolation_map is equivalent to W * M_in in Keppens et al. (2019) eq. 14,
+        and has dimension (nobs x ngc x nsat)
         """
-        # todo: DOUBLE CHECK this is actually W * M_in and not M_out * W
+
         # Define matrices with "low" and "high" pressure values for each layer.
         # shape: nobs x n_model_levels - 1 x n_satellite_levels - 1
         model_low = model_edges[:, 1:][:, :, None]
         model_high = model_edges[:, :-1][:, :, None]
+
         satellite_low = satellite_edges[:, 1:][:, None, :]
         satellite_high = satellite_edges[:, :-1][:, None, :]
 
-        # Get the indices where the GC-to-satellite mapping, which is
-        # a nobs x ngc x nsat matrix, is non-zero
-        idx = np.less_equal(satellite_low, model_high) & np.greater_equal(
-            satellite_high, model_low
-        )
-
-        # Find the fraction of each GC level that contributes to each
-        # TROPOMI level. We should first divide (to normalize) and then
-        # multiply (to apply the map to the column) by the GC pressure
-        # difference, but we exclude this (since it's the same as x1).
-
-        # todo: I think we have to multiply to keep it consistent with the edges version
-        model_to_satellite = np.minimum(satellite_high, model_high) - np.maximum(
+        interpolation_map = np.minimum(satellite_high, model_high) - np.maximum(
             satellite_low, model_low
         )
-        model_to_satellite[~idx] = 0
+        layers_do_not_intersect = ~(
+            np.less_equal(satellite_low, model_high)
+            & np.greater_equal(satellite_high, model_low)
+        )
+        interpolation_map[layers_do_not_intersect] = 0
 
-        return model_to_satellite
+        return interpolation_map
 
-    def __get_hprime_satellite_edges(self):
+    def get_hprime_satellite_edges(self):
         """
         Equivalent to hprime in equation 11 of of Keppens et al. (2019).
 
@@ -149,35 +144,34 @@ class VerticalGrid:
     def interpolate(self):
         """
         Interpolate GEOS-Chem methane to satellite edges OR centers.
-
-        Turns out neither of us use dry air for anything b/c it's neglibible for interpolation.
-            Dry air only matters for the pressure weighting.
         """
-        clipped_model_edges = self.model_edges
-        # clipped_model_edges = self.__clip_model_to_satellite_range(
-        #     model_edges=self.model_edges, satellite_edges=self.satellite_edges
-        # )
+        expanded_model_edges = self.expand_model_to_satellite_range()
+
         if self.interpolate_to_centers_or_edges == "centers":
-            model_to_satellite_centers = self.__get_interpolation_map(
-                model_edges=clipped_model_edges, satellite_edges=self.satellite_edges
+            interpolation_map = self.get_interpolation_map(
+                model_edges=expanded_model_edges, satellite_edges=self.satellite_edges
             )
+            partial_column_to_conc = 1 / np.abs(np.diff(self.satellite_edges))  # M_out*
+
         elif self.interpolate_to_centers_or_edges == "edges":
-            hprime_satellite_edges = self.__get_hprime_satellite_edges()
-            model_to_satellite_centers = self.__get_interpolation_map(
-                model_edges=clipped_model_edges, satellite_edges=hprime_satellite_edges
-            )  # interpolates model to hprime satellite centers
-            centers_to_edges = 1 / np.abs(
+            hprime_satellite_edges = self.get_hprime_satellite_edges()
+            interpolation_map = self.get_interpolation_map(
+                model_edges=expanded_model_edges, satellite_edges=hprime_satellite_edges
+            )  # interpolates model to hprime satellite layers
+            partial_column_to_conc = 1 / np.abs(
                 np.diff(hprime_satellite_edges)
-            )  # M_out* in eq. 10 of Keppens et al. (2019)
-            # model_to_satellite_edges = centers_to_edges @ model_to_satellite_centers 
+            )  # M_out*
+
         else:
             raise ValueError(
                 f"interpolate_to_centers_or_edges must be 'centers' or 'edges', not {self.interpolate_to_centers_or_edges}"
             )
 
-        # Now map the GC CH4 to the satellite levels
-        model_column = (model_to_satellite * self.clipped_model_edges[:, :, None]).sum(
-            axis=1) / model_to_satellite.sum(axis=1)
-        # todo: process in chunks of 1 million?
+        satellite_partial_columns = (
+            interpolation_map * self.model_conc_at_layers[:, :, None]
+        ).sum(
+            axis=1
+        )  # matrix multiplication across nobs model concentration vectors
+        satellite_conc = partial_column_to_conc * satellite_partial_columns
 
-        return model_column
+        return satellite_conc
