@@ -72,3 +72,10 @@ Approximations:
         methane concentrations at the center of each pressure level
    - LATITUDE, LONGITUDE, and TIME: Strings corresponding to the netcdf dimensions
         for each of the corresponding quantities
+
+
+
+Steps for an observation operator
+
+1. Interpolate model profile to satellite profile. 
+2. Apply averaging kernel AND the pressure weighting function. 
