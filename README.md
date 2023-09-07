@@ -77,5 +77,7 @@ Approximations:
 
 Steps for an observation operator
 
-1. Interpolate model profile to satellite profile. 
-2. Apply averaging kernel AND the pressure weighting function. 
+1. Read in the file.
+2. Horizontal colocation or interpolation of the satellite to the model grid. 
+3. Interpolate model profile to satellite profile. 
+4. Apply averaging kernel AND the pressure weighting function. 
