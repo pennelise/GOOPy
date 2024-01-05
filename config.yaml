@@ -15,6 +15,7 @@ TROPOMIvXX: # version is specified for each instrument
     AVERAGING_KERNEL: 'xch4_column_averaging_kernel'
     PRIOR_PROFILE: 'ch4_profile_apriori'
     SATELLITE_COLUMN: 'xch4'
+    QUALITY_FLAG: 'none'
 
 GOSATv9_0: 
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
@@ -31,6 +32,22 @@ GOSATv9_0:
     PRIOR_PROFILE: 'ch4_profile_apriori'
     SATELLITE_COLUMN: 'xch4'
     QUALITY_FLAG: 'xch4_quality_flag'
+
+OCO2_v11.1:
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
+  PARSER: 'read_satellite_file.py'
+  DATA_FIELDS:
+    N_OBS: 'sounding_id'
+    N_EDGES: 'levels'
+    PRESSURE_EDGES: 'pressure_levels'
+    PRESSURE_WEIGHT: 'pressure_weight'
+    LATITUDE: 'latitude'
+    LONGITUDE: 'longitude'
+    TIME: 'time'
+    AVERAGING_KERNEL: 'xco2_averaging_kernel'
+    PRIOR_PROFILE: 'co2_profile_apriori'
+    SATELLITE_COLUMN: 'xco2'
+    QUALITY_FLAG: 'none'
 
 # Model
 MODEL: 
