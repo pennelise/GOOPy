@@ -1,6 +1,8 @@
 # Observations
 TROPOMIvXX: # version is specified for each instrument
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
+  OBS_DIR: '...'
+  FILE_NAME_FORMAT: '...'
   PARSER: 'read_TROPOMIvXX'
   DATA_FIELDS: 
     N_OBS: 'nobs'
@@ -19,6 +21,8 @@ TROPOMIvXX: # version is specified for each instrument
 
 GOSATv9_0: 
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
+  OBS_DIR: '...'
+  FILE_NAME_FORMAT: '...'
   PARSER: 'read_GOSATv9_0'
   DATA_FIELDS:
     N_OBS: 'n'
@@ -33,9 +37,11 @@ GOSATv9_0:
     SATELLITE_COLUMN: 'xch4'
     QUALITY_FLAG: 'xch4_quality_flag'
 
-OCO2_v11.1:
+OCO2_v11.1_preprocessed:
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
-  PARSER: 'read_satellite_file.py'
+  OBS_DIR: '/home5/hnesser/CO2_inversion/data/observations/OCO-2'
+  FILE_NAME_FORMAT: 'oco2_*.nc'
+  PARSER: 'read_satellite_file'
   DATA_FIELDS:
     N_OBS: 'sounding_id'
     N_EDGES: 'levels'
@@ -50,11 +56,12 @@ OCO2_v11.1:
     QUALITY_FLAG: 'none'
 
 # Model
-MODEL: 
+MODEL:
+  MODEL_DIR: '/nobackup/hnesser/CO2_inv/validation_dirs/gc_4x5_47L_merra2_CO2/OutputDir'
   LEVEL_EDGE_FILE_FORMAT: 'GEOSChem.LevelEdgeDiags.*_0000z.nc4' # 20150301
   CONCENTRATION_FILE_FORMAT: 'GEOSChem.SpeciesConc.*_0000z.nc4' #20150301
-  PRESSURE_EDGES: 'Met_PEDGE'
-  CONCENTRATION_AT_PRESSURE_CENTERS: 'SpeciesConc_CH4'
+  PRESSURE_EDGES: 'Met_PEDGE' # Not PEDGEDRY?
+  CONCENTRATION_AT_PRESSURE_CENTERS: 'SpeciesConcVV_CO2'
   LATITUDE: 'lat'
   LONGITUDE: 'lon'
   TIME: 'time'
