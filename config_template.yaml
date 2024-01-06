@@ -2,11 +2,13 @@
 # vertical grid using pressure edges.
 SATELLITE_USING_PRESSURE_EDGES: 
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
+  OBS_DIR: 'location_of_data'
+  FILE_NAME_FORMAT: 'file_name_format*.nc'
   PARSER: 'parser_name_in_parsers.py'
   DATA_FIELDS:
-    N_OBS: 'observation_dimension_name'
-    N_EDGES: 'vertical_level_edges'
-    PRESSURE_EDGES: 'dimension_name'
+    N_OBS: 'observation_name'
+    N_EDGES: 'vertical_level_edges'  # What is the difference between
+    PRESSURE_EDGES: 'dimension_name' # these two fields?
     PRESSURE_WEIGHT: 'dimension_name'
     LATITUDE: 'dimension_name'
     LONGITUDE: 'dimension_name'
@@ -21,13 +23,15 @@ SATELLITE_USING_PRESSURE_EDGES:
 # and DELTA_PRESSURE instead of PRESSURE_EDGES.
 SATELLITE_USING_PRESSURE_CENTERS: 
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
+  OBS_DIR: 'location_of_data'
+  FILE_NAME_FORMAT: 'file_name_format*.nc'
   PARSER: 'parser_name_in_parsers.py'
   DATA_FIELDS:
-    N_OBS: 'observation_dimension_name'
-    N_EDGES: 'vertical_level_edges'
-    N_CENTERS: '...'
+    N_OBS: 'observation_name'
+    N_EDGES: 'level_edge_name' # Rename
+    N_CENTERS: 'level_center_name'
     SURFACE_PRESSURE: 'dimension_name'
-    DELTA_PRESSURE: 'dp'
+    DELTA_PRESSURE: 'dimension_name'
     PRESSURE_WEIGHT: 'dimension_name'
     LATITUDE: 'dimension_name'
     LONGITUDE: 'dimension_name'
