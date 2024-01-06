@@ -60,8 +60,11 @@ MODEL:
   MODEL_DIR: '/nobackup/hnesser/CO2_inv/validation_dirs/gc_4x5_47L_merra2_CO2/OutputDir'
   LEVEL_EDGE_FILE_FORMAT: 'GEOSChem.LevelEdgeDiags.*_0000z.nc4' # 20150301
   CONCENTRATION_FILE_FORMAT: 'GEOSChem.SpeciesConc.*_0000z.nc4' #20150301
-  PRESSURE_EDGES: 'Met_PEDGE' # Not PEDGEDRY?
-  CONCENTRATION_AT_PRESSURE_CENTERS: 'SpeciesConcVV_CO2'
-  LATITUDE: 'lat'
-  LONGITUDE: 'lon'
-  TIME: 'time'
+  DATA_FIELDS:
+    PRESSURE_EDGES: 'Met_PEDGE' # Not PEDGEDRY?
+    CONCENTRATION_AT_PRESSURE_CENTERS: 'SpeciesConcVV_CO2'
+    LATITUDE: 'lat'
+    LONGITUDE: 'lon'
+    TIME: 'time'
+    LEV: 'lev'
+    ILEV: 'ilev'
