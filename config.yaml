@@ -7,9 +7,12 @@ TROPOMIvXX: # version is specified for each instrument
   DATA_FIELDS: 
     N_OBS: 'nobs'
     N_EDGES: 'nlevels'
-    N_CENTERS: 'nlayers'
-    SURFACE_PRESSURE: 'surface_pressure'
-    DELTA_PRESSURE: 'dp' 
+    PRESSURE_EDGES: 'pressure_edges' # This variable does not
+    # exist in the TROPOMI files and needs to be created in the
+    # parser.
+    # N_CENTERS: 'nlayers'
+    # SURFACE_PRESSURE: 'surface_pressure'
+    # DELTA_PRESSURE: 'dp' 
     PRESSURE_WEIGHT: 'dry_air_subcolumns'
     LATITUDE: 'latitude_center'
     LONGITUDE: 'longitude_center'
@@ -62,7 +65,7 @@ MODEL:
   CONCENTRATION_FILE_FORMAT: 'GEOSChem.SpeciesConc.*_0000z.nc4' #20150301
   DATA_FIELDS:
     PRESSURE_EDGES: 'Met_PEDGE' # Not PEDGEDRY?
-    CONCENTRATION_AT_PRESSURE_CENTERS: 'SpeciesConcVV_CO2'
+    CONC_AT_PRESSURE_CENTERS: 'SpeciesConcVV_CO2'
     LATITUDE: 'lat'
     LONGITUDE: 'lon'
     TIME: 'time'

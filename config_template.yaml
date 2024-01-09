@@ -1,7 +1,7 @@
 # Generic config format for a satellite that specifies the 
 # vertical grid using pressure edges.
 SATELLITE_USING_PRESSURE_EDGES: 
-  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers' or 'edges'
   OBS_DIR: 'location_of_data'
   FILE_NAME_FORMAT: 'file_name_format*.nc'
   PARSER: 'parser_name_in_parsers.py'
@@ -17,26 +17,3 @@ SATELLITE_USING_PRESSURE_EDGES:
     PRIOR_PROFILE: 'dimension_name'
     SATELLITE_COLUMN: 'dimension_name'
     QUALITY_FLAG: 'optional_dimension_name_or_none'
-
-# If the satellite data specifies the vertical grid using 
-# pressure centers, we specify N_CENTERS, SURFACE_PRESSURE,
-# and DELTA_PRESSURE instead of PRESSURE_EDGES.
-SATELLITE_USING_PRESSURE_CENTERS: 
-  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
-  OBS_DIR: 'location_of_data'
-  FILE_NAME_FORMAT: 'file_name_format*.nc'
-  PARSER: 'parser_name_in_parsers.py'
-  DATA_FIELDS:
-    N_OBS: 'observation_name'
-    N_EDGES: 'level_edge_name' # Rename
-    N_CENTERS: 'level_center_name'
-    SURFACE_PRESSURE: 'dimension_name'
-    DELTA_PRESSURE: 'dimension_name'
-    PRESSURE_WEIGHT: 'dimension_name'
-    LATITUDE: 'dimension_name'
-    LONGITUDE: 'dimension_name'
-    TIME: 'dimension_name'
-    AVERAGING_KERNEL: 'dimension_name'
-    PRIOR_PROFILE: 'dimension_name'
-    SATELLITE_COLUMN: 'dimension_name'
-    QUALITY_FLAG: 'optional_dimension_name_or_None'
