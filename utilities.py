@@ -3,6 +3,7 @@ import yaml
 import glob
 import inspect
 import numpy as np
+import xarray as xr
 import parsers
 
 # Open the config file
@@ -20,19 +21,29 @@ def get_file_lists(satellite_name):
     mod_fields = config["MODEL"]
 
     ## Level edges
-    gc_edge_files = (f"{mod_fields['MODEL_DIR']}/"
+    model_edge_files = (f"{mod_fields['MODEL_DIR']}/"
                      f"{mod_fields['LEVEL_EDGE_FILE_FORMAT']}")
-    gc_edge_files = np.array(sorted(glob.glob(gc_edge_files)))
+    model_edge_files = np.array(sorted(glob.glob(model_edge_files)))
 
     ## Concentrations
-    gc_conc_files = (f"{mod_fields['MODEL_DIR']}/"
-                     f"{mod_fields['CONCENTRATION_FILE_FORMAT']}")
-    gc_conc_files = np.array(sorted(glob.glob(gc_conc_files)))
+    model_conc_files = (f"{mod_fields['MODEL_DIR']}/"
+                        f"{mod_fields['CONCENTRATION_FILE_FORMAT']}")
+    model_conc_files = np.array(sorted(glob.glob(model_conc_files)))
 
-    return sat_files, gc_edge_files, gc_conc_files
+    # Require that all of these lists contain files.
+    assert ((len(sat_files) > 0) 
+            and (len(model_edge_files) > 0)
+            and (len(model_conc_files) > 0)), \
+            "One of the provided directories is empty."
+
+    return sat_files, model_edge_files, model_conc_files
 
 
 def get_gc_dates(file_names):
+    '''
+    TO DO: switch to YYYYMMDD reading of config.yaml inputs
+    so that this is more flexible if file formats ever change.
+    '''
     dates = [d.split('/')[-1].split('.')[-2].split('_')[0] 
              for d in file_names]
     return dates
@@ -45,15 +56,49 @@ def get_gc_files_for_dates(file_names, dates):
 def get_satellite_parser(satellite_name):
     # Get the function that opens the satellite data. Check that the function
     # has a default value for satellite_name. If not, use satellite_name
-    read_satellite = getattr(parsers, config[satellite_name]["PARSER"])
-    name_param = inspect.signature(read_satellite).parameters["satellite_name"]
-    if name_param.default is name_param.empty:
-        print("satellite_name is not a default argument in the provided ")
-        print("parser. The sat_name provided in this script is used ")
-        print("instead. Please check that the appropriate parser is being ")
-        print("used for this satellite: ")
-        print(f"  satellite_name : {satellite_name}")
-        print(f"  parser : {config[satellite_name]['PARSER']}")
-        return lambda file_path: read_satellite(file_path, satellite_name)
-    else:
-        return read_satellite
+    read_sat = getattr(parsers, config[satellite_name]["PARSER"])
+    name_param = inspect.signature(read_sat).parameters["satellite_name"]
+    if name_param.default is not name_param.empty:
+        satellite_name = name_param.default
+    print(f"satellite_name : {satellite_name}")
+    print(f"parser : {config[satellite_name]['PARSER']}")
+
+    # Define the function
+    def read_satellite(file_path):
+        dataset = read_sat(file_path, satellite_name)
+        parsers.check_satellite_data(dataset)
+        return dataset
+    
+    return read_satellite
+
+def colocate_obs(model, satellite):
+    """
+    directly from Hannah's code
+    get gridcells which are coincident with each satellite observation
+    assumes model pixel size >> satellite pixel size
+    fast implementation, credit Nick
+    TO DO : This could be sped up using Nick's implementation, but that
+    requires knowledge of the latitude and longitude delta
+    """
+    # Longitude index
+    lon_idx = np.abs(
+        model["LONGITUDE"].values.reshape((-1, 1))
+        - satellite["LONGITUDE"].values.reshape((1, -1))
+    )
+    lon_idx = lon_idx.argmin(axis=0)
+    lon_idx = xr.DataArray(lon_idx, dims="NOBS")
+
+    # Latitude index
+    lat_idx = np.abs(
+        model["LATITUDE"].values.reshape((-1, 1))
+        - satellite["LATITUDE"].values.reshape((1, -1))
+    )
+    lat_idx = lat_idx.argmin(axis=0)
+    lat_idx = xr.DataArray(lat_idx, dims="NOBS")
+
+    # Time index
+    time_idx = np.where(satellite["TIME"].dt.strftime("%Y%m%d.%H")
+                        == model["TIME"].dt.strftime("%Y%m%d.%H"))[1]
+    time_idx = xr.DataArray(time_idx, dims="NOBS")
+
+    return lon_idx, lat_idx, time_idx
