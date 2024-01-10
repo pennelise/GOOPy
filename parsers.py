@@ -35,7 +35,7 @@ def read_geoschem_file(file_path_conc, file_path_edges):
     # Rename the fields to the standard (as defined in config.yaml)
     rename_fields = {v : k for k, v in fields.items()}
     gc = gc.rename(rename_fields)
-    
+
     # Transpose
     gc = gc.transpose("TIME", "LONGITUDE", "LATITUDE", "LEV", "ILEV")
 
@@ -68,13 +68,6 @@ def read_satellite_file(file_path, satellite_name):
     rename_fields = {v : k for k, v in fields.items()}
     satellite = satellite.rename(rename_fields)
 
-    # Ensure that satellite pressure levels are in descending order:
-    if np.all(np.diff(satellite["PRESSURE_EDGES"]) > 0):
-        print("Switching direction of N_EDGES.")
-        satellite = satellite.reindex(
-            N_EDGES=list(reversed(satellite["N_EDGES"]))
-        )
-
     # Return the data
     return satellite
 
@@ -106,8 +99,15 @@ def read_OCO2_v11_1_preprocessed(file_path,
     return satellite
 
 
-def check_satellite_data(dataset):
+def check_satellite_data(satellite):
     # TO DO: assert type(sat["TIME"]) == datetime (need to deal with the fact
     # that dtype shows up as '<M8[ns]' or '>M8[ns]' depending on the endianess
     # ?? of the system)
-    pass
+        # Ensure that satellite pressure levels are in descending order:
+    if np.all(np.diff(satellite["PRESSURE_EDGES"]) > 0):
+        print("Switching direction of N_EDGES.")
+        satellite = satellite.reindex(
+            N_EDGES=list(reversed(satellite["N_EDGES"]))
+        )
+
+    return satellite
