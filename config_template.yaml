@@ -6,14 +6,14 @@ SATELLITE_USING_PRESSURE_EDGES:
   FILE_NAME_FORMAT: 'file_name_format*.nc'
   PARSER: 'parser_name_in_parsers.py'
   DATA_FIELDS:
-    N_OBS: 'observation_name'
-    N_EDGES: 'vertical_level_edges'  # What is the difference between
-    PRESSURE_EDGES: 'dimension_name' # these two fields?
-    PRESSURE_WEIGHT: 'dimension_name'
-    LATITUDE: 'dimension_name'
-    LONGITUDE: 'dimension_name'
-    TIME: 'dimension_name'
-    AVERAGING_KERNEL: 'dimension_name'
-    PRIOR_PROFILE: 'dimension_name'
-    SATELLITE_COLUMN: 'dimension_name'
-    QUALITY_FLAG: 'optional_dimension_name_or_none'
+    N_OBS: 'observation_dimension_name'
+    N_EDGES: 'vertical_level_edges_dimension_name'  # What is the difference between
+    PRESSURE_EDGES: 'variable_name' # these two fields?
+    PRESSURE_WEIGHT: 'variable_name'
+    LATITUDE: 'variable_name'
+    LONGITUDE: 'variable_name'
+    TIME: 'variable_name'
+    AVERAGING_KERNEL: 'variable_name'
+    PRIOR_PROFILE: 'variable_name'
+    SATELLITE_COLUMN: 'variable_name'
+    QUALITY_FLAG: 'optional_variable_name_or_none'
