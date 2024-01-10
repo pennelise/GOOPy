@@ -80,10 +80,24 @@ def colocate_obs(model, satellite):
     TO DO : This could be sped up using Nick's implementation, but that
     requires knowledge of the latitude and longitude delta
     """
+    # First, check that everything in the satellite time is in the model
+    # data.
+    satellite_times = satellite["TIME"].dt.strftime("%Y%m%d.%H")
+    model_times = model["TIME"].dt.strftime("%Y%m%d.%H")
+    missing_times = np.in1d(satellite_times, model_times)
+    if missing_times.sum() > 0:
+        print("Missing model data at the following times:")
+        print(satellite_times[missing_times])
+    
+    # Now get indices, beginning with time
+    time_idx = np.where(satellite_times[missing_times]
+                        == model_times)[1]
+    time_idx = xr.DataArray(time_idx, dims="NOBS")
+
     # Longitude index
     lon_idx = np.abs(
         model["LONGITUDE"].values.reshape((-1, 1))
-        - satellite["LONGITUDE"].values.reshape((1, -1))
+        - satellite["LONGITUDE"].values[missing_times].reshape((1, -1))
     )
     lon_idx = lon_idx.argmin(axis=0)
     lon_idx = xr.DataArray(lon_idx, dims="NOBS")
@@ -91,14 +105,9 @@ def colocate_obs(model, satellite):
     # Latitude index
     lat_idx = np.abs(
         model["LATITUDE"].values.reshape((-1, 1))
-        - satellite["LATITUDE"].values.reshape((1, -1))
+        - satellite["LATITUDE"].values[missing_times].reshape((1, -1))
     )
     lat_idx = lat_idx.argmin(axis=0)
     lat_idx = xr.DataArray(lat_idx, dims="NOBS")
-
-    # Time index
-    time_idx = np.where(satellite["TIME"].dt.strftime("%Y%m%d.%H")
-                        == model["TIME"].dt.strftime("%Y%m%d.%H"))[1]
-    time_idx = xr.DataArray(time_idx, dims="NOBS")
 
     return lon_idx, lat_idx, time_idx
