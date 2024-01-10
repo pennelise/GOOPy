@@ -62,8 +62,8 @@ OCO2_v11.1_preprocessed:
 MODEL:
   MODEL_DIR: '/nobackup/hnesser/CO2_inv/validation_dirs/gc_4x5_47L_merra2_CO2/OutputDir'
   SAVE_DIR: '/nobackup/hnesser/CO2_inv/validation_dirs/gc_4x5_47L_merra2_CO2/ProcessedDir'
-  LEVEL_EDGE_FILE_FORMAT: 'GEOSChem.LevelEdgeDiags.*_0000z.nc4' # 20150301
-  CONCENTRATION_FILE_FORMAT: 'GEOSChem.SpeciesConc.*_0000z.nc4' #20150301
+  LEVEL_EDGE_FILE_FORMAT: 'GEOSChem.LevelEdgeDiags.*.nc4' # 20150301
+  CONCENTRATION_FILE_FORMAT: 'GEOSChem.SpeciesConc.*.nc4' #20150301
   DATA_FIELDS:
     PRESSURE_EDGES: 'Met_PEDGE' # Not PEDGEDRY?
     CONC_AT_PRESSURE_CENTERS: 'SpeciesConcVV_CO2'
