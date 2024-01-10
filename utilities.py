@@ -66,7 +66,7 @@ def get_satellite_parser(satellite_name):
     # Define the function
     def read_satellite(file_path):
         dataset = read_sat(file_path, satellite_name)
-        parsers.check_satellite_data(dataset)
+        dataset = parsers.check_satellite_data(dataset)
         return dataset
     
     return read_satellite
@@ -85,9 +85,11 @@ def colocate_obs(model, satellite):
     satellite_times = satellite["TIME"].dt.strftime("%Y%m%d.%H")
     model_times = model["TIME"].dt.strftime("%Y%m%d.%H")
     missing_times = np.in1d(satellite_times, model_times)
-    if missing_times.sum() > 0:
-        print("Missing model data at the following times:")
-        print(satellite_times[missing_times])
+    if (~missing_times).sum() > 0:
+        print(f"Missing model data at the following {missing_times.sum()} times:")
+        print(satellite_times[missing_times].values)
+        print("And the following missing dates:")
+        print(np.unique([str(d)[:6] for d in satellite_times[missing_times]]))
     
     # Now get indices, beginning with time
     time_idx = np.where(satellite_times[missing_times]
