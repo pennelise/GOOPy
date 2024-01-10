@@ -44,7 +44,7 @@ OCO2_v11.1_preprocessed:
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
   OBS_DIR: '/home5/hnesser/CO2_inversion/data/observations/OCO-2'
   FILE_NAME_FORMAT: 'oco2_*.nc'
-  PARSER: 'read_satellite_file'
+  PARSER: 'read_OCO2_v11_1_preprocessed'
   DATA_FIELDS:
     N_OBS: 'sounding_id'
     N_EDGES: 'levels'
@@ -61,6 +61,7 @@ OCO2_v11.1_preprocessed:
 # Model
 MODEL:
   MODEL_DIR: '/nobackup/hnesser/CO2_inv/validation_dirs/gc_4x5_47L_merra2_CO2/OutputDir'
+  SAVE_DIR: '/nobackup/hnesser/CO2_inv/validation_dirs/gc_4x5_47L_merra2_CO2/ProcessedDir'
   LEVEL_EDGE_FILE_FORMAT: 'GEOSChem.LevelEdgeDiags.*_0000z.nc4' # 20150301
   CONCENTRATION_FILE_FORMAT: 'GEOSChem.SpeciesConc.*_0000z.nc4' #20150301
   DATA_FIELDS:
