@@ -1,3 +1,4 @@
+import os
 import yaml
 import numpy as np
 import xarray as xr
@@ -11,6 +12,9 @@ with open("config.yaml", "r", encoding="utf8") as f:
 
 def apply_operator(satellite_name, file_length_threshold=1e6):
     """apply one of the default operators to a satellite"""
+    # Make save out directory
+    if not os.path.exists(config["MODEL"]["SAVE_DIR"]):
+        os.makedirs(config["MODEL"]["SAVE_DIR"])
 
     # Obtain a list of the satellite and GEOS-Chem files.
     files = util.get_file_lists(satellite_name)
@@ -29,7 +33,10 @@ def apply_operator(satellite_name, file_length_threshold=1e6):
 
     # Iterate through the satellite files:
     for sf in satellite_files:
+        short_name = sf.split("/")[-1]
+
         # Read the first file
+        print(f"Processing {short_name}")
         satellite = read_satellite(sf)
 
         # Get unique dates from the file that overlap with the model dates.
@@ -37,22 +44,15 @@ def apply_operator(satellite_name, file_length_threshold=1e6):
                            in np.unique(satellite["TIME"].dt.strftime("%Y%m%d"))
                            if date in model_dates]
         if len(satellite_dates) == 0:
-            print(f"There are no temporally overlapping model data for {sf}")
+            print(f"  There are no temporally overlapping model data for {short_name}")
             continue
 
         # Next, open the model files. We iterate through this in chunks of
         # file_length_threshold to balance memory constraints with the
         # benefits of vectorization.
         i = 0
-        tick = int(satellite.dims["N_OBS"]/20)
         model_columns = []
-        satellite_columns = []
         while i < satellite.dims["N_OBS"]:
-            # Tick if relevant
-            if i % tick == 0:
-                pct_complete = 100*i/satellite.dims["N_OBS"]
-                print(f'{pct_complete:.0f}%')
-
             # Get model columns and append to list
             model_columns.append(
                 apply_operator_to_chunks(
@@ -69,7 +69,10 @@ def apply_operator(satellite_name, file_length_threshold=1e6):
         satellite_columns = satellite[["SATELLITE_COLUMN", "LATITUDE", 
                                        "LONGITUDE", "TIME"]]
         satellite_columns["MODEL_COLUMN"] = model_columns
-        satellite_columns.to_netcdf(config["MODEL"]["SAVE_DIR"])
+
+        # Save
+        short_name = short_name.split('.')[0] + '_operator.nc'
+        satellite_columns.to_netcdf(f'{config["MODEL"]["SAVE_DIR"]}/{short_name}')
 
 
 def apply_operator_to_chunks(model_conc_files,
@@ -146,4 +149,10 @@ def regrid_gc_to_sat_pixels(sat_lat, sat_lon, gc_lat, gc_lon):
 if __name__ == "__main__":
     import sys
     satellite_name = sys.argv[1]
-    apply_operator(satellite_name)
+    try:
+        file_length_threshold = int(sys.argv[2])
+    except:
+        file_length_threshold = 1e6
+
+    # Run the operator
+    apply_operator(satellite_name, file_length_threshold)
