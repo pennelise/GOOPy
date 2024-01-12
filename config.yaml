@@ -1,6 +1,7 @@
 # Observations
 TROPOMIvXX: # version is specified for each instrument
   REPROCESS: '...'
+  SAVE_SATELLITE_DATA: '...'
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
   OBS_DIR: '...'
   FILE_NAME_FORMAT: '...'
@@ -25,6 +26,7 @@ TROPOMIvXX: # version is specified for each instrument
 
 GOSATv9_0:
   REPROCESS: '...'
+  SAVE_SATELLITE_DATA: '...'
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
   OBS_DIR: '...'
   FILE_NAME_FORMAT: '...'
@@ -44,6 +46,7 @@ GOSATv9_0:
 
 OCO2_v11.1_preprocessed:
   REPROCESS: 'False'
+  SAVE_SATELLITE_DATA: 'True'
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
   OBS_DIR: '/home5/hnesser/CO2_inversion/data/observations/OCO-2'
   FILE_NAME_FORMAT: 'oco2_20201*.nc'

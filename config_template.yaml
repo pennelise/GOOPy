@@ -2,6 +2,7 @@
 # vertical grid using pressure edges.
 SATELLITE_USING_PRESSURE_EDGES:
   REPROCESS: 'True' or 'False'
+  SAVE_SATELLITE_DATA: 'True' or 'False'
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers' or 'edges'
   OBS_DIR: 'location_of_data'
   FILE_NAME_FORMAT: 'file_name_format*.nc'
