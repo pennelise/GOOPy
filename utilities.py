@@ -36,11 +36,19 @@ def get_file_lists(satellite_name):
             and (len(model_conc_files) > 0)), \
             "One of the provided directories is empty."
     
-    # Processed files
-    processed_files = f"{mod_fields['SAVE_DIR']}"
-    processed_files = np.array(sorted(glob.glob(processed_files)))
+    # If not reprocess, remove 
+    if ~bool(sat_fields["REPROCESS"]):
+        # Get list of processed files
+        proc_files = f"{mod_fields['SAVE_DIR']}"
+        proc_files = np.array(sorted(glob.glob(proc_files)))
 
-    return sat_files, model_edge_files, model_conc_files, processed_files
+        # Compare to the staellite files
+        proc_files = [f.split("_operator.nc")[0] 
+                           for f in proc_files]
+        sat_files = [f for f in sat_files 
+                           if f.split(".")[0] not in proc_files]
+
+    return sat_files, model_edge_files, model_conc_files
 
 
 def get_gc_dates(file_names):
