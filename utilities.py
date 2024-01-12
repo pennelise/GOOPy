@@ -49,7 +49,6 @@ def get_file_lists(satellite_name):
                       if f.split("/")[-1].split(".")[0] in proc_files]
         sat_files = [f for f in sat_files 
                      if f.split("/")[-1].split(".")[0] not in proc_files]
-        print(excl_files)
 
         print(f"  Skipping ", excl_files)
 
