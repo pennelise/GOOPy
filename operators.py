@@ -21,8 +21,8 @@ def apply_operator(satellite_name, file_length_threshold=1e6):
     satellite_files, model_edge_files, model_conc_files = files
 
     # Get the dates for which we have model files.
-    # TO DO: Currently, this assumes that the GEOS-Chem files are daily or monthly
-    # We should update this to be more flexible.)
+    # TO DO: Currently, this assumes that the GEOS-Chem files are daily or
+    # monthly. We should update this to be more flexible.
     model_dates = np.unique(
         [date for date in util.get_gc_dates(model_edge_files)
          if date in util.get_gc_dates(model_conc_files)]
@@ -66,9 +66,10 @@ def apply_operator(satellite_name, file_length_threshold=1e6):
         
         # Concatenate together, combine, and return
         model_columns = xr.concat(model_columns, dim="N_OBS")
-        satellite_columns = satellite[["SATELLITE_COLUMN", "LATITUDE", 
-                                       "LONGITUDE", "TIME"]]
-        satellite_columns["MODEL_COLUMN"] = model_columns
+        if bool(config[satellite_name]["SAVE_SATELLITE_DATA"]):
+            satellite_columns = satellite[["SATELLITE_COLUMN", "LATITUDE", 
+                                        "LONGITUDE", "TIME"]]
+            satellite_columns["MODEL_COLUMN"] = model_columns
 
         # Save
         short_name = short_name.split('.')[0] + '_operator.nc'
