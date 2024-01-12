@@ -39,16 +39,17 @@ def get_file_lists(satellite_name):
     # If not reprocess, remove 
     if ~bool(sat_fields["REPROCESS"]):
         # Get list of processed files
-        proc_files = f"{mod_fields['SAVE_DIR']}"
+        proc_files = f"{mod_fields['SAVE_DIR']}/*"
         proc_files = np.array(sorted(glob.glob(proc_files)))
 
         # Compare to the staellite files
         proc_files = [f.split("/")[-1].split("_operator.nc")[0] 
                       for f in proc_files]
-        sat_files = [f for f in sat_files 
-                     if f.split("/")[-1].split(".")[0] not in proc_files]
         excl_files = [f.split("/")[-1] for f in sat_files
                       if f.split("/")[-1].split(".")[0] in proc_files]
+        sat_files = [f for f in sat_files 
+                     if f.split("/")[-1].split(".")[0] not in proc_files]
+        print(excl_files)
 
         print(f"  Skipping ", excl_files)
 
