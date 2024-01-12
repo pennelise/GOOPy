@@ -43,10 +43,12 @@ def get_file_lists(satellite_name):
         proc_files = np.array(sorted(glob.glob(proc_files)))
 
         # Compare to the staellite files
-        proc_files = [f.split("_operator.nc")[0] 
-                           for f in proc_files]
+        proc_files = [f.split("/")[-1].split("_operator.nc")[0] 
+                      for f in proc_files]
         sat_files = [f for f in sat_files 
-                           if f.split(".")[0] not in proc_files]
+                     if f.split("/").split(".")[0] not in proc_files]
+        
+        print('Skipping')
 
     return sat_files, model_edge_files, model_conc_files
 
