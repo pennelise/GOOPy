@@ -46,9 +46,11 @@ def get_file_lists(satellite_name):
         proc_files = [f.split("/")[-1].split("_operator.nc")[0] 
                       for f in proc_files]
         sat_files = [f for f in sat_files 
-                     if f.split("/").split(".")[0] not in proc_files]
-        
-        print('Skipping')
+                     if f.split("/")[-1].split(".")[0] not in proc_files]
+        excl_files = [f.split("/")[-1] for f in sat_files
+                      if f.split("/")[-1].split(".")[0] in proc_files]
+
+        print(f"  Skipping ", excl_files)
 
     return sat_files, model_edge_files, model_conc_files
 
