@@ -90,9 +90,10 @@ def get_satellite_parser(satellite_name):
 
 def get_missing_times(satellite_times, model_times):
     satellite_times = satellite_times.dt.strftime("%Y-%m-%d.%H")
-    missing_times = ~np.in1d(satellite_times,
-                             model_times.dt.strftime("%Y-%m-%d.%H"))
-    if (~missing_times).sum() == 0:
+    missing_times = xr.DataArray(
+        ~np.in1d(satellite_times, model_times.dt.strftime("%Y-%m-%d.%H")),
+        dims="N_OBS")
+    if missing_times.sum() > 0:
         print(f"  Missing model data at the following"
               f" {missing_times.sum()} times:")
         print(satellite_times[missing_times].values)
@@ -111,22 +112,23 @@ def colocate_obs(model, satellite):
     # Now get indices, beginning with time
     time_idx = np.where(satellite["TIME"].dt.strftime("%Y-%m-%d.%H") 
                         == model["TIME"].dt.strftime("%Y-%m-%d.%H"))[1]
-    time_idx = xr.DataArray(time_idx, dims="NOBS")
+    time_idx = xr.DataArray(time_idx, dims="N_OBS")
 
-    # Longitude index
-    lon_idx = np.abs(
-        model["LONGITUDE"].values.reshape((-1, 1))
-        - satellite["LONGITUDE"].values.reshape((1, -1))
-    )
-    lon_idx = lon_idx.argmin(axis=0)
-    lon_idx = xr.DataArray(lon_idx, dims="NOBS")
+    # Longitude and latitude index
+    lon_idx = get_closest_index(model["LONGITUDE"].values, 
+                                satellite["LONGITUDE"].values)
+    lat_idx = get_closest_index(model["LATITUDE"].values, 
+                                satellite["LATITUDE"].values)
 
-    # Latitude index
-    lat_idx = np.abs(
-        model["LATITUDE"].values.reshape((-1, 1))
-        - satellite["LATITUDE"].values.reshape((1, -1))
-    )
-    lat_idx = lat_idx.argmin(axis=0)
-    lat_idx = xr.DataArray(lat_idx, dims="NOBS")
+    # Subset the data
+    model = model.isel(TIME=time_idx, LONGITUDE=lon_idx, LATITUDE=lat_idx)
 
-    return lon_idx, lat_idx, time_idx
+    return model
+
+def get_closest_index(model_data, satellite_data, xarray=True, dims="N_OBS"):
+    idx = np.abs(
+        model_data.reshape((-1, 1)) - satellite_data.reshape((1, -1)))
+    idx = idx.argmin(axis=0)
+    if xarray:
+        idx = xr.DataArray(idx, dims=dims)
+    return idx
