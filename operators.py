@@ -71,11 +71,9 @@ def apply_operator_to_chunks(model_conc_files,
     # We iterate through this in chunks of
     # file_length_threshold to balance memory constraints with the
     # benefits of vectorization.
-    print(satellite["TIME"].values)
     i = 0
     model_columns = []
     satellite_columns = []
-    print(satellite.dims["N_OBS"])
     while i < satellite.dims["N_OBS"]:
         # Subset the satellite data
         sat_i = satellite.isel(N_OBS=slice(int(i), 
