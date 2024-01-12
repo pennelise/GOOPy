@@ -45,7 +45,8 @@ def apply_operator(satellite_name, file_length_threshold=1e6):
                            if date in model_dates]
 
         if len(satellite_dates) == 0:
-            print(f"  There are no temporally overlapping model data for {short_name}")
+            print(f"  There are no temporally overlapping model "
+                  f"data for {short_name}")
             continue
 
         satellite = satellite.where(
@@ -91,12 +92,15 @@ def apply_operator_to_chunks(model_conc_files,
         # if there are no overlapping itmes
         missing_times = util.get_missing_times(sat_i["TIME"], mod_i["TIME"])
         if (~missing_times).sum() == 0:
+            print("  There are no overlapping satellite and model data in"
+                  " this chunk.")
             i += file_length_threshold
             continue
 
         # Run the column operator
         model_columns.append(
-            get_model_columns(mod_i, sat_i[~missing_times], satellite_name))
+            get_model_columns(
+                mod_i, sat_i.where(~missing_times, drop=True), satellite_name))
         if bool(config[satellite_name]["SAVE_SATELLITE_DATA"]):
             satellite_columns.append(
                 sat_i[["SATELLITE_COLUMN", "LATITUDE", "LONGITUDE", "TIME"]])
@@ -107,6 +111,7 @@ def apply_operator_to_chunks(model_conc_files,
     # Concatenate together, combine, and return
     if len(model_columns) > 0:
         model_columns = xr.concat(model_columns, dim="N_OBS")
+        model_columns = model_columns.rename("MODEL_COLUMNS")
         if bool(config[satellite_name]["SAVE_SATELLITE_DATA"]):
             satellite_columns = xr.concat(satellite_columns, dim="N_OBS")
             model_columns = xr.merge(model_columns, satellite_columns)
@@ -124,8 +129,7 @@ def get_model_columns(model, satellite, satellite_name):
     """
     # Get the spatial and temporal indices linking each satellite observation
     # back to the model grid and apply them to the model data
-    lon_idx, lat_idx, time_idx = util.colocate_obs(model, satellite)
-    model = model.isel(TIME=time_idx, LONGITUDE=lon_idx, LATITUDE=lat_idx)
+    model = util.colocate_obs(model, satellite)
 
     # Create an instance of the VerticalGrid class and interpolate the model
     # onto satellite levels
