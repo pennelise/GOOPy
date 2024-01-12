@@ -25,8 +25,7 @@ def apply_operator(satellite_name, file_length_threshold=1e6):
     # monthly. We should update this to be more flexible.
     model_dates = np.unique(
         [date for date in util.get_gc_dates(model_edge_files)
-         if date in util.get_gc_dates(model_conc_files)]
-         )
+         if date in util.get_gc_dates(model_conc_files)])
 
     # Get the satellite parser. 
     read_satellite = util.get_satellite_parser(satellite_name)
@@ -39,65 +38,83 @@ def apply_operator(satellite_name, file_length_threshold=1e6):
         print(f"Processing {short_name}")
         satellite = read_satellite(sf)
 
-        # Get unique dates from the file that overlap with the model dates.
+        # Get unique dates from the file that overlap with the model dates
+        # and subset for those dates.
         satellite_dates = [date for date 
-                           in np.unique(satellite["TIME"].dt.strftime("%Y%m%d"))
+                           in np.unique(satellite["TIME"].dt.strftime("%Y-%m-%d"))
                            if date in model_dates]
+
         if len(satellite_dates) == 0:
             print(f"  There are no temporally overlapping model data for {short_name}")
             continue
 
-        # Next, open the model files. We iterate through this in chunks of
-        # file_length_threshold to balance memory constraints with the
-        # benefits of vectorization.
-        i = 0
-        model_columns = []
-        while i < satellite.dims["N_OBS"]:
-            # Get model columns and append to list
-            model_columns.append(
-                apply_operator_to_chunks(
-                    model_conc_files, model_edge_files, satellite, 
-                    satellite_name, i, file_length_threshold
-                    )
-                )
+        satellite = satellite.where(
+            satellite["TIME"].dt.strftime("%Y-%m-%d").isin(satellite_dates), 
+            drop=True)
 
-            # Step up i
-            i += file_length_threshold
+        # Next, apply the operator
+        model_columns = apply_operator_to_chunks(
+            model_conc_files, model_edge_files, satellite, 
+            satellite_name, file_length_threshold)
         
-        # Concatenate together, combine, and return
-        model_columns = xr.concat(model_columns, dim="N_OBS")
-        if bool(config[satellite_name]["SAVE_SATELLITE_DATA"]):
-            satellite_columns = satellite[["SATELLITE_COLUMN", "LATITUDE", 
-                                        "LONGITUDE", "TIME"]]
-            satellite_columns["MODEL_COLUMN"] = model_columns
-
         # Save
-        short_name = short_name.split('.')[0] + '_operator.nc'
-        satellite_columns.to_netcdf(f'{config["MODEL"]["SAVE_DIR"]}/{short_name}')
+        if model_columns is not None:
+            short_name = short_name.split('.')[0] + '_operator.nc'
+            model_columns.to_netcdf(f'{config["MODEL"]["SAVE_DIR"]}/{short_name}')
 
 
 def apply_operator_to_chunks(model_conc_files,
                              model_edge_files,
                              satellite, 
                              satellite_name,
-                             i, file_length_threshold):
-    # Subset the satellite data
-    satellite_i = satellite.isel(N_OBS=slice(int(i), 
-                                             int(i + file_length_threshold)))
+                             file_length_threshold):
+    # We iterate through this in chunks of
+    # file_length_threshold to balance memory constraints with the
+    # benefits of vectorization.
+    print(satellite["TIME"].values)
+    i = 0
+    model_columns = []
+    satellite_columns = []
+    print(satellite.dims["N_OBS"])
+    while i < satellite.dims["N_OBS"]:
+        # Subset the satellite data
+        sat_i = satellite.isel(N_OBS=slice(int(i), 
+                                           int(i + file_length_threshold)))
     
-    # Get the dates that need to be processed
-    process_dates = np.unique(satellite_i["TIME"].dt.strftime("%Y%m%d"))
+        # Get the dates that need to be processed
+        process_dates = np.unique(sat_i["TIME"].dt.strftime("%Y-%m-%d"))
 
-    # Load the model data for those dates
-    model_i = parsers.read_geoschem_file(
-        util.get_gc_files_for_dates(model_conc_files, process_dates),
-        util.get_gc_files_for_dates(model_edge_files, process_dates))
-    
-    # Run the column operator
-    model_columns_i = get_model_columns(model_i, satellite_i, 
-                                        satellite_name)
-    
-    return model_columns_i
+        # Load the model data for those dates
+        mod_i = parsers.read_geoschem_file(
+            util.get_gc_files_for_dates(model_conc_files, process_dates),
+            util.get_gc_files_for_dates(model_edge_files, process_dates))
+
+        # Check for times that are missing in the satellite data and continue
+        # if there are no overlapping itmes
+        missing_times = util.get_missing_times(sat_i["TIME"], mod_i["TIME"])
+        if (~missing_times).sum() == 0:
+            i += file_length_threshold
+            continue
+
+        # Run the column operator
+        model_columns.append(
+            get_model_columns(mod_i, sat_i[~missing_times], satellite_name))
+        if bool(config[satellite_name]["SAVE_SATELLITE_DATA"]):
+            satellite_columns.append(
+                sat_i[["SATELLITE_COLUMN", "LATITUDE", "LONGITUDE", "TIME"]])
+
+        # Step up i
+        i += file_length_threshold
+
+    # Concatenate together, combine, and return
+    if len(model_columns) > 0:
+        model_columns = xr.concat(model_columns, dim="N_OBS")
+        if bool(config[satellite_name]["SAVE_SATELLITE_DATA"]):
+            satellite_columns = xr.concat(satellite_columns, dim="N_OBS")
+            model_columns = xr.merge(model_columns, satellite_columns)
+        return model_columns
+    else:
+        return None
 
 
 def get_model_columns(model, satellite, satellite_name):
@@ -115,17 +132,15 @@ def get_model_columns(model, satellite, satellite_name):
     # Create an instance of the VerticalGrid class and interpolate the model
     # onto satellite levels
     model_on_satellite_levels = VerticalGrid(
-            model["CONC_AT_PRESSURE_CENTERS"].values,
-            model["PRESSURE_EDGES"].values,
-            satellite["PRESSURE_EDGES"].values,
-            config[satellite_name]["AVERAGING_KERNEL_USES_CENTERS_OR_EDGES"]
-            )
+        model["CONC_AT_PRESSURE_CENTERS"].values,
+        model["PRESSURE_EDGES"].values,
+        satellite["PRESSURE_EDGES"].values,
+        config[satellite_name]["AVERAGING_KERNEL_USES_CENTERS_OR_EDGES"])
     model_on_satellite_levels = model_on_satellite_levels.interpolate()
 
     # Apply the averaging kernel
     model_columns = apply_averaging_kernel(
-        model_on_satellite_levels, satellite
-        )
+        model_on_satellite_levels, satellite)
     
     return model_columns
 

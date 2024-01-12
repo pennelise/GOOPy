@@ -60,8 +60,9 @@ def get_gc_dates(file_names):
     TO DO: switch to YYYYMMDD reading of config.yaml inputs
     so that this is more flexible if file formats ever change.
     '''
-    dates = [d.split('/')[-1].split('.')[-2].split('_')[0] 
+    dates = [d.split("/")[-1].split(".")[-2].split("_")[0] 
              for d in file_names]
+    dates = [f"{d[:4]}-{d[4:6]}-{d[6:]}" for d in dates]
     return dates
 
 
@@ -87,6 +88,17 @@ def get_satellite_parser(satellite_name):
     
     return read_satellite
 
+def get_missing_times(satellite_times, model_times):
+    satellite_times = satellite_times.dt.strftime("%Y-%m-%d.%H")
+    missing_times = ~np.in1d(satellite_times,
+                             model_times.dt.strftime("%Y-%m-%d.%H"))
+    if (~missing_times).sum() == 0:
+        print(f"  Missing model data at the following"
+              f" {missing_times.sum()} times:")
+        print(satellite_times[missing_times].values)
+    return missing_times
+
+
 def colocate_obs(model, satellite):
     """
     directly from Hannah's code
@@ -95,27 +107,16 @@ def colocate_obs(model, satellite):
     fast implementation, credit Nick
     TO DO : This could be sped up using Nick's implementation, but that
     requires knowledge of the latitude and longitude delta
-    """
-    # First, check that everything in the satellite time is in the model
-    # data.
-    satellite_times = satellite["TIME"].dt.strftime("%Y%m%d.%H")
-    model_times = model["TIME"].dt.strftime("%Y%m%d.%H")
-    missing_times = np.in1d(satellite_times, model_times)
-    if (~missing_times).sum() > 0:
-        print(f"  Missing model data at the following {missing_times.sum()} times:")
-        print(satellite_times[missing_times].values)
-        print("  And the following missing dates:")
-        print(np.unique([str(d.values)[:6] for d in satellite_times[missing_times]]))
-    
+    """    
     # Now get indices, beginning with time
-    time_idx = np.where(satellite_times[missing_times]
-                        == model_times)[1]
+    time_idx = np.where(satellite["TIME"].dt.strftime("%Y-%m-%d.%H") 
+                        == model["TIME"].dt.strftime("%Y-%m-%d.%H"))[1]
     time_idx = xr.DataArray(time_idx, dims="NOBS")
 
     # Longitude index
     lon_idx = np.abs(
         model["LONGITUDE"].values.reshape((-1, 1))
-        - satellite["LONGITUDE"].values[missing_times].reshape((1, -1))
+        - satellite["LONGITUDE"].values.reshape((1, -1))
     )
     lon_idx = lon_idx.argmin(axis=0)
     lon_idx = xr.DataArray(lon_idx, dims="NOBS")
@@ -123,7 +124,7 @@ def colocate_obs(model, satellite):
     # Latitude index
     lat_idx = np.abs(
         model["LATITUDE"].values.reshape((-1, 1))
-        - satellite["LATITUDE"].values[missing_times].reshape((1, -1))
+        - satellite["LATITUDE"].values.reshape((1, -1))
     )
     lat_idx = lat_idx.argmin(axis=0)
     lat_idx = xr.DataArray(lat_idx, dims="NOBS")
