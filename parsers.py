@@ -105,7 +105,7 @@ def check_satellite_data(satellite):
     # ?? of the system)
         # Ensure that satellite pressure levels are in descending order:
     if np.all(np.diff(satellite["PRESSURE_EDGES"]) > 0):
-        print("Switching direction of N_EDGES.")
+        print("  Switching direction of N_EDGES.")
         satellite = satellite.reindex(
             N_EDGES=list(reversed(satellite["N_EDGES"]))
         )
