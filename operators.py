@@ -6,6 +6,7 @@ from interpolation import VerticalGrid
 import utilities as util
 import parsers
 
+
 with open("config.yaml", "r", encoding="utf8") as f:
     config = yaml.safe_load(f)
 
@@ -114,7 +115,7 @@ def apply_operator_to_chunks(model_conc_files,
         model_columns = model_columns.rename("MODEL_COLUMNS")
         if bool(config[satellite_name]["SAVE_SATELLITE_DATA"]):
             satellite_columns = xr.concat(satellite_columns, dim="N_OBS")
-            model_columns = xr.merge(model_columns, satellite_columns)
+            model_columns = xr.merge([model_columns, satellite_columns])
         return model_columns
     else:
         return None
