@@ -35,8 +35,12 @@ def get_file_lists(satellite_name):
             and (len(model_edge_files) > 0)
             and (len(model_conc_files) > 0)), \
             "One of the provided directories is empty."
+    
+    # Processed files
+    processed_files = f"{mod_fields['SAVE_DIR']}"
+    processed_files = np.array(sorted(glob.glob(processed_files)))
 
-    return sat_files, model_edge_files, model_conc_files
+    return sat_files, model_edge_files, model_conc_files, processed_files
 
 
 def get_gc_dates(file_names):
@@ -86,10 +90,10 @@ def colocate_obs(model, satellite):
     model_times = model["TIME"].dt.strftime("%Y%m%d.%H")
     missing_times = np.in1d(satellite_times, model_times)
     if (~missing_times).sum() > 0:
-        print(f"Missing model data at the following {missing_times.sum()} times:")
+        print(f"  Missing model data at the following {missing_times.sum()} times:")
         print(satellite_times[missing_times].values)
-        print("And the following missing dates:")
-        print(np.unique([str(d)[:6] for d in satellite_times[missing_times]]))
+        print("  And the following missing dates:")
+        print(np.unique([str(d.values)[:6] for d in satellite_times[missing_times]]))
     
     # Now get indices, beginning with time
     time_idx = np.where(satellite_times[missing_times]
