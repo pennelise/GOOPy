@@ -95,7 +95,7 @@ def get_missing_times(satellite_times, model_times):
         dims="N_OBS")
     if missing_times.sum() > 0:
         print(f"  Missing model data at the following"
-              f" {missing_times.sum()} times:")
+              f" {missing_times.sum().values} times:")
         print(satellite_times[missing_times].values)
     return missing_times
 
