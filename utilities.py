@@ -37,7 +37,7 @@ def get_file_lists(satellite_name):
             "One of the provided directories is empty."
     
     # If not reprocess, remove 
-    if ~bool(sat_fields["REPROCESS"]):
+    if sat_fields["REPROCESS"].lower() == "false":
         # Get list of processed files
         proc_files = f"{mod_fields['SAVE_DIR']}/*"
         proc_files = np.array(sorted(glob.glob(proc_files)))

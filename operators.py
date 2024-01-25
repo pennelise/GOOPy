@@ -102,7 +102,7 @@ def apply_operator_to_chunks(model_conc_files,
         model_columns.append(
             get_model_columns(
                 mod_i, sat_i.where(~missing_times, drop=True), satellite_name))
-        if bool(config[satellite_name]["SAVE_SATELLITE_DATA"]):
+        if config[satellite_name]["SAVE_SATELLITE_DATA"].lower() == "true":
             satellite_columns.append(
                 sat_i[["SATELLITE_COLUMN", "LATITUDE", "LONGITUDE", "TIME"]])
 
@@ -113,7 +113,7 @@ def apply_operator_to_chunks(model_conc_files,
     if len(model_columns) > 0:
         model_columns = xr.concat(model_columns, dim="N_OBS")
         model_columns = model_columns.rename("MODEL_COLUMNS")
-        if bool(config[satellite_name]["SAVE_SATELLITE_DATA"]):
+        if config[satellite_name]["SAVE_SATELLITE_DATA"].lower() == "true":
             satellite_columns = xr.concat(satellite_columns, dim="N_OBS")
             model_columns = xr.merge([model_columns, satellite_columns])
         return model_columns
