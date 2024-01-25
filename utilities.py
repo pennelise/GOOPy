@@ -111,7 +111,13 @@ def colocate_obs(model, satellite):
     """    
     # Now get indices, beginning with time
     time_idx = np.where(satellite["TIME"].dt.strftime("%Y-%m-%d.%H") 
-                        == model["TIME"].dt.strftime("%Y-%m-%d.%H"))[1]
+                        == model["TIME"].dt.strftime("%Y-%m-%d.%H"))
+    if len(time_idx) == 2:
+        time_idx = time_idx[1]
+    elif len(time_idx) == 1:
+        time_idx = time_idx[0]
+    else:
+        raise ValueError('Time index is not recognized.')
     time_idx = xr.DataArray(time_idx, dims="N_OBS")
 
     # Longitude and latitude index
