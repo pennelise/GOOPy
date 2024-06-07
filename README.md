@@ -1,3 +1,5 @@
+# General Observation Operator for Python (GOOPy)
+
 # Draft of README 
 
 Mass-conserving vertical interpolation and satellite observation operator for inclusion in GCPy. 
