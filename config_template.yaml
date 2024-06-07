@@ -1,0 +1,21 @@
+# Generic config format for a satellite that specifies the 
+# vertical grid using pressure edges.
+SATELLITE_USING_PRESSURE_EDGES:
+  REPROCESS: 'True' or 'False'
+  SAVE_SATELLITE_DATA: 'True' or 'False'
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers' or 'edges'
+  OBS_DIR: 'location_of_data'
+  FILE_NAME_FORMAT: 'file_name_format*.nc'
+  PARSER: 'parser_name_in_parsers.py'
+  DATA_FIELDS:
+    N_OBS: 'observation_dimension_name'
+    N_EDGES: 'vertical_level_edges_dimension_name'  # What is the difference between
+    PRESSURE_EDGES: 'variable_name' # these two fields?
+    PRESSURE_WEIGHT: 'variable_name'
+    LATITUDE: 'variable_name'
+    LONGITUDE: 'variable_name'
+    TIME: 'variable_name'
+    AVERAGING_KERNEL: 'variable_name'
+    PRIOR_PROFILE: 'variable_name'
+    SATELLITE_COLUMN: 'variable_name'
+    QUALITY_FLAG: 'optional_variable_name_or_none'

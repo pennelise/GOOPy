@@ -91,8 +91,8 @@ class VerticalGrid:
         idx_top = np.greater(self.model_edges[:, -1], self.satellite_edges[:, -1])
 
         expanded_model_edges = self.model_edges.copy()
-        expanded_model_edges[idx_bottom, 0] = self.model_edges[idx_bottom, 0]
-        expanded_model_edges[idx_top, -1] = self.model_edges[idx_top, -1]
+        expanded_model_edges[idx_bottom, 0] = self.satellite_edges[idx_bottom, 0]
+        expanded_model_edges[idx_top, -1] = self.satellite_edges[idx_top, -1]
         return expanded_model_edges
 
     @staticmethod
