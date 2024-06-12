@@ -25,7 +25,7 @@ Discussed in this issue for GCPy: https://github.com/geoschem/gcpy/issues/242
      - `conda activate goopyenv`
      - `python main.py`
 
-##  Configuration file for satellite operators
+##  Configuration file
  This file describes the structure of the satellite or model files used as inputs for the 
  satellite operator. 
 
