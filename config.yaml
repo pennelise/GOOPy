@@ -1,10 +1,35 @@
+# Change these before your run the script.
+LOCAL_SETTINGS:
+  REPROCESS: 'True'
+  SAVE_SATELLITE_DATA: 'True'
+  PARSER: 'OCO2_v11.1_preprocessed'
+  OBS_DIR: '/Users/Elise/Downloads/OCO-2'
+  OBS_FILE_FORMAT: 'oco2_20141*.nc'
+  MODEL_DIR: '/Users/Elise/Downloads/GEOSChem_201410'
+  LEVEL_EDGE_FILE_FORMAT: 'GEOSChem.LevelEdgeDiags.*.nc4' 
+  CONCENTRATION_FILE_FORMAT: 'GEOSChem.SpeciesConc.*.nc4' 
+  SAVE_DIR: '/Users/Elise/Downloads/outdir'
+  FILE_LENGTH_THRESHOLD: 1.0e+6
+
 # Observations
+OCO2_v11.1_preprocessed:
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
+  PARSER: 'read_OCO2_v11_1_preprocessed'
+  DATA_FIELDS:
+    N_OBS: 'sounding_id'
+    N_EDGES: 'levels'
+    PRESSURE_EDGES: 'pressure_levels'
+    PRESSURE_WEIGHT: 'pressure_weight'
+    LATITUDE: 'latitude'
+    LONGITUDE: 'longitude'
+    TIME: 'time'
+    AVERAGING_KERNEL: 'xco2_averaging_kernel'
+    PRIOR_PROFILE: 'co2_profile_apriori'
+    SATELLITE_COLUMN: 'xco2'
+    QUALITY_FLAG: 'none'
+
 TROPOMIvXX: # version is specified for each instrument
-  REPROCESS: '...'
-  SAVE_SATELLITE_DATA: '...'
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
-  OBS_DIR: '...'
-  FILE_NAME_FORMAT: '...'
   PARSER: 'read_TROPOMIvXX'
   DATA_FIELDS: 
     N_OBS: 'nobs'
@@ -25,11 +50,7 @@ TROPOMIvXX: # version is specified for each instrument
     QUALITY_FLAG: 'none'
 
 GOSATv9_0:
-  REPROCESS: '...'
-  SAVE_SATELLITE_DATA: '...'
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
-  OBS_DIR: '...'
-  FILE_NAME_FORMAT: '...'
   PARSER: 'read_GOSATv9_0'
   DATA_FIELDS:
     N_OBS: 'n'
@@ -44,35 +65,11 @@ GOSATv9_0:
     SATELLITE_COLUMN: 'xch4'
     QUALITY_FLAG: 'xch4_quality_flag'
 
-OCO2_v11.1_preprocessed:
-  REPROCESS: 'False'
-  SAVE_SATELLITE_DATA: 'True'
-  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
-  OBS_DIR: '/home5/hnesser/CO2_inversion/data/observations/OCO-2'
-  FILE_NAME_FORMAT: 'oco2_20201*.nc'
-  PARSER: 'read_OCO2_v11_1_preprocessed'
-  DATA_FIELDS:
-    N_OBS: 'sounding_id'
-    N_EDGES: 'levels'
-    PRESSURE_EDGES: 'pressure_levels'
-    PRESSURE_WEIGHT: 'pressure_weight'
-    LATITUDE: 'latitude'
-    LONGITUDE: 'longitude'
-    TIME: 'time'
-    AVERAGING_KERNEL: 'xco2_averaging_kernel'
-    PRIOR_PROFILE: 'co2_profile_apriori'
-    SATELLITE_COLUMN: 'xco2'
-    QUALITY_FLAG: 'none'
-
 # Model
 MODEL:
-  MODEL_DIR: '/nobackupp27/hnesser/CO2_inv/validation_dirs/gc_4x5_47L_merra2_CO2/OutputDir'
-  SAVE_DIR: '/nobackupp27/hnesser/CO2_inv/validation_dirs/gc_4x5_47L_merra2_CO2/ProcessedDir'
-  LEVEL_EDGE_FILE_FORMAT: 'GEOSChem.LevelEdgeDiags.*.nc4' # 20150301
-  CONCENTRATION_FILE_FORMAT: 'GEOSChem.SpeciesConc.*.nc4' #20150301
   DATA_FIELDS:
     PRESSURE_EDGES: 'Met_PEDGE' # Not PEDGEDRY?
-    CONC_AT_PRESSURE_CENTERS: 'SpeciesConcVV_CO2'
+    CONC_AT_PRESSURE_CENTERS: 'SpeciesConcVV_CO2' # todo: CO2 vs CH4. 
     LATITUDE: 'lat'
     LONGITUDE: 'lon'
     TIME: 'time'

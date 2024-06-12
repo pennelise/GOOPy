@@ -7,39 +7,38 @@ import xarray as xr
 import parsers
 
 # Open the config file
+# TODO, allow other names for config file, so we can input from main.py
 with open("config.yaml", "r", encoding="utf8") as f:
     config = yaml.safe_load(f)
 
 
-def get_file_lists(satellite_name):
-    # Satellite files
-    sat_fields = config[satellite_name]
-    sat_files = f"{sat_fields['OBS_DIR']}/{sat_fields['FILE_NAME_FORMAT']}"
-    sat_files = np.array(sorted(glob.glob(sat_files)))
+def get_file_lists():
+    '''
+    Build lists of satellite, model edge, and model concentration files to process. 
+    Directories and file name formats come from config.yaml LOCAL_SETTINGS.
+    '''
+    settings = config["LOCAL_SETTINGS"]
 
-    # Model fields
-    mod_fields = config["MODEL"]
+    sat_files = f"{settings['OBS_DIR']}/{settings['OBS_FILE_FORMAT']}"
+    sat_files = np.array(sorted(glob.glob(sat_files)))    
 
-    ## Level edges
-    model_edge_files = (f"{mod_fields['MODEL_DIR']}/"
-                     f"{mod_fields['LEVEL_EDGE_FILE_FORMAT']}")
+    model_edge_files = (f"{settings['MODEL_DIR']}/"
+                     f"{settings['LEVEL_EDGE_FILE_FORMAT']}")
     model_edge_files = np.array(sorted(glob.glob(model_edge_files)))
 
-    ## Concentrations
-    model_conc_files = (f"{mod_fields['MODEL_DIR']}/"
-                        f"{mod_fields['CONCENTRATION_FILE_FORMAT']}")
+    model_conc_files = (f"{settings['MODEL_DIR']}/"
+                        f"{settings['CONCENTRATION_FILE_FORMAT']}")
     model_conc_files = np.array(sorted(glob.glob(model_conc_files)))
 
-    # Require that all of these lists contain files.
     assert ((len(sat_files) > 0) 
             and (len(model_edge_files) > 0)
             and (len(model_conc_files) > 0)), \
             "One of the provided directories is empty."
     
     # If not reprocess, remove 
-    if sat_fields["REPROCESS"].lower() == "false":
+    if settings["REPROCESS"].lower() == "false":
         # Get list of processed files
-        proc_files = f"{mod_fields['SAVE_DIR']}/*"
+        proc_files = f"{settings['SAVE_DIR']}/*"
         proc_files = np.array(sorted(glob.glob(proc_files)))
 
         # Compare to the staellite files
