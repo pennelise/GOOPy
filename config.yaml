@@ -12,6 +12,22 @@ LOCAL_SETTINGS:
   FILE_LENGTH_THRESHOLD: 1.0e+6
 
 # Observations
+OCO2_v11.1_preprocessed:
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
+  PARSER: 'read_OCO2_v11_1_preprocessed'
+  DATA_FIELDS:
+    N_OBS: 'sounding_id'
+    N_EDGES: 'levels'
+    PRESSURE_EDGES: 'pressure_levels'
+    PRESSURE_WEIGHT: 'pressure_weight'
+    LATITUDE: 'latitude'
+    LONGITUDE: 'longitude'
+    TIME: 'time'
+    AVERAGING_KERNEL: 'xco2_averaging_kernel'
+    PRIOR_PROFILE: 'co2_profile_apriori'
+    SATELLITE_COLUMN: 'xco2'
+    QUALITY_FLAG: 'none'
+
 TROPOMIvXX: # version is specified for each instrument
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
   PARSER: 'read_TROPOMIvXX'
@@ -48,22 +64,6 @@ GOSATv9_0:
     PRIOR_PROFILE: 'ch4_profile_apriori'
     SATELLITE_COLUMN: 'xch4'
     QUALITY_FLAG: 'xch4_quality_flag'
-
-OCO2_v11.1_preprocessed:
-  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
-  PARSER: 'read_OCO2_v11_1_preprocessed'
-  DATA_FIELDS:
-    N_OBS: 'sounding_id'
-    N_EDGES: 'levels'
-    PRESSURE_EDGES: 'pressure_levels'
-    PRESSURE_WEIGHT: 'pressure_weight'
-    LATITUDE: 'latitude'
-    LONGITUDE: 'longitude'
-    TIME: 'time'
-    AVERAGING_KERNEL: 'xco2_averaging_kernel'
-    PRIOR_PROFILE: 'co2_profile_apriori'
-    SATELLITE_COLUMN: 'xco2'
-    QUALITY_FLAG: 'none'
 
 # Model
 MODEL:
