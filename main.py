@@ -48,7 +48,7 @@ def apply_operator_to_chunks(model_conc_files,
         model_columns.append(
             operators.get_model_columns(
                 mod_i, sat_i.where(~missing_times, drop=True), satellite_name))
-        if config[satellite_name]["SAVE_SATELLITE_DATA"].lower() == "true":
+        if config["LOCAL_SETTINGS"]["SAVE_SATELLITE_DATA"].lower() == "true":
             satellite_columns.append(
                 sat_i[["SATELLITE_COLUMN", "LATITUDE", "LONGITUDE", "TIME"]])
 
@@ -59,7 +59,7 @@ def apply_operator_to_chunks(model_conc_files,
     if len(model_columns) > 0:
         model_columns = xr.concat(model_columns, dim="N_OBS")
         model_columns = model_columns.rename("MODEL_COLUMN")
-        if config[satellite_name]["SAVE_SATELLITE_DATA"].lower() == "true":
+        if config["LOCAL_SETTINGS"]["SAVE_SATELLITE_DATA"].lower() == "true":
             satellite_columns = xr.concat(satellite_columns, dim="N_OBS")
             model_columns = xr.merge([model_columns, satellite_columns])
         return model_columns
@@ -70,11 +70,11 @@ def apply_operator_to_chunks(model_conc_files,
 def apply_operator(satellite_name, file_length_threshold=1e6):
     """apply one of the default operators to a satellite"""
     # Make save out directory
-    if not os.path.exists(config["MODEL"]["SAVE_DIR"]):
-        os.makedirs(config["MODEL"]["SAVE_DIR"])
+    if not os.path.exists(config["LOCAL_SETTINGS"]["SAVE_DIR"]):
+        os.makedirs(config["LOCAL_SETTINGS"]["SAVE_DIR"])
 
     # Obtain a list of the satellite and GEOS-Chem files.
-    files = util.get_file_lists(satellite_name)
+    files = util.get_file_lists()
     satellite_files, model_edge_files, model_conc_files = files
 
     # Get the dates for which we have model files.
@@ -118,16 +118,9 @@ def apply_operator(satellite_name, file_length_threshold=1e6):
         # Save
         if model_columns is not None:
             short_name = short_name.split('.')[0] + '_operator.nc'
-            model_columns.to_netcdf(f'{config["MODEL"]["SAVE_DIR"]}/{short_name}')
+            model_columns.to_netcdf(f'{config["LOCAL_SETTINGS"]["SAVE_DIR"]}/{short_name}')
     
 
 if __name__ == "__main__":
-
-    satellite_name = sys.argv[1]
-    try:
-        file_length_threshold = int(sys.argv[2])
-    except:
-        file_length_threshold = 1e6
-
     # Run the operator
-    apply_operator(satellite_name, file_length_threshold)
+    apply_operator(config['LOCAL_SETTINGS']['PARSER'], int(config['LOCAL_SETTINGS']['FILE_LENGTH_THRESHOLD']))
