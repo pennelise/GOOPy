@@ -29,7 +29,7 @@ Discussed in this issue for GCPy: https://github.com/geoschem/gcpy/issues/242
 
 We follow the method described in [Keppens et al. (2019)](https://doi.org/10.5194/amt-12-4379-2019), which describes a mass-conserving interpolation function in eq. 14: 
 
-$$ W' = M^*_{out}WM_{in} $$ 
+$$ W' = M_{out}^* W M_{in} $$
 
 Where $M_{in}$ converts from concentrations at pressure **centers** on the model profile to partial columns on the model profile (units Pa) (todo, check terminology), $M_{out}$ converts from partial columns on the satellite profile to concetrations at pressure edges or pressure centers on the satellite profile, and W is the interpolation matrix defined by eq. 13:
 
