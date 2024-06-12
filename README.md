@@ -31,9 +31,9 @@ We follow the method described in [Keppens et al. (2019)](https://doi.org/10.519
 
 $$ W' = M^*_{out}WM_{in} $$ 
 
-Where $M_{in}$ converts from concentrations at pressure centers on the model profile to partial columns on the model profile (units Pa) (todo, check terminology), $M_{out}$ converts from partial columns on the satellite profile to concetrations at pressure edges or pressure centers on the satellite profile, and W is the interpolation matrix defined by eq. 13:
+Where $M_{in}$ converts from concentrations at pressure **centers** on the model profile to partial columns on the model profile (units Pa) (todo, check terminology), $M_{out}$ converts from partial columns on the satellite profile to concetrations at pressure edges or pressure centers on the satellite profile, and W is the interpolation matrix defined by eq. 13:
 
-$$ W(i,j) = frac{min(p_{out,i}^U, p_{in,j}^U - max(p_{out,i}^L, p_{in,j}^L))}{\Delta p_{in,j}} $$ 
+$$ W(i,j) = \frac{1}{\Delta p_{in,j}}(min(p_{out,i}^U, p_{in,j}^U) - max(p_{out,i}^L, p_{in,j}^L)) $$ 
 
 Eq. 14 can be used to interpolate to both pressure edges or pressure centers depending on the choice of $M^*_{out}$. 
 
@@ -89,12 +89,3 @@ Approximations:
         methane concentrations at the center of each pressure level
    - LATITUDE, LONGITUDE, and TIME: Strings corresponding to the netcdf dimensions
         for each of the corresponding quantities
-
-
-
-Steps for an observation operator
-
-1. Read in the file.
-2. Horizontal colocation or interpolation of the satellite to the model grid. 
-3. Interpolate model profile to satellite profile. 
-4. Apply averaging kernel AND the pressure weighting function. 
