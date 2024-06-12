@@ -68,7 +68,7 @@ We follow the method described in [Keppens et al. (2019)](https://doi.org/10.519
 
 $$ W' = M_{out}^* W M_{in} $$
 
-Where $M_{in}$ converts from concentrations at pressure **centers** on the model profile to partial columns on the model profile (units Pa) (todo, check terminology), $M_{out}$ converts from partial columns on the satellite profile to concetrations at pressure edges or pressure centers on the satellite profile, and W is the interpolation matrix defined by eq. 13:
+Where $M_{in}$ converts from concentrations at pressure **centers** on the model profile to partial columns on the model profile, $M_{out}$ converts from partial columns on the satellite profile to concetrations at pressure edges or pressure centers on the satellite profile, and W is the interpolation matrix defined by eq. 13:
 
 $$ W(i,j) = \frac{1}{\Delta p_{in,j}}(min(p_{out,i}^U, p_{in,j}^U) - max(p_{out,i}^L, p_{in,j}^L)) $$ 
 
