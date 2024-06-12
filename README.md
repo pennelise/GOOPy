@@ -33,11 +33,11 @@ $$ W' = M^*_{out}WM_{in} $$
 
 Where $M_{in}$ converts from concentrations at pressure centers on the model profile to partial columns on the model profile (units Pa) (todo, check terminology), $M_{out}$ converts from partial columns on the satellite profile to concetrations at pressure edges or pressure centers on the satellite profile, and W is the interpolation matrix defined by eq. 13:
 
-$$ W(i,j) = frac{min(p_{out,i}^U, p_{in,j}^U - max(p_{out,i}^L, p_{in,j}^L))}{\delta p_{in,j}} $$ 
+$$ W(i,j) = frac{min(p_{out,i}^U, p_{in,j}^U - max(p_{out,i}^L, p_{in,j}^L))}{\Delta p_{in,j}} $$ 
 
 Eq. 14 can be used to interpolate to both pressure edges or pressure centers depending on the choice of $M^*_{out}$. 
 
-We define M_{out}, which transforms from pressure centers (or edges) to partial columns, and then take the inverse M^*_{out} to transform from partial columns to pressure centers (or edges). 
+We define $M_{out}$, which transforms from pressure centers (or edges) to partial columns, and then take the inverse $M^*_{out}$ to transform from partial columns to pressure centers (or edges). 
 
 To transform from N-1 pressure centers to partial columns, $M_{out}$ is just the pressure difference for each layer, and has dimension (N-1)x(N-1). 
 
