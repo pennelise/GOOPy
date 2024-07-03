@@ -31,10 +31,22 @@ def get_file_lists(satellite_name):
     model_conc_files = np.array(sorted(glob.glob(model_conc_files)))
 
     # Require that all of these lists contain files.
-    assert ((len(sat_files) > 0) 
-            and (len(model_edge_files) > 0)
-            and (len(model_conc_files) > 0)), \
-            "One of the provided directories is empty."
+    if len(sat_files) == 0:
+        print(f"Satellite directory: "
+              f"{sat_fields['OBS_DIR']}/{sat_fields['FILE_NAME_FORMAT']}")
+        raise ValueError("Satellite files are empty.")
+    
+    if len(model_edge_files) == 0:
+        print(f"Model edge directory: "
+              f"{mod_fields['MODEL_DIR']}/"
+              f"{mod_fields['LEVEL_EDGE_FILE_FORMAT']}")
+        raise ValueError("Model edge files are empty.")
+    
+    if len(model_conc_files) == 0:
+        print(f"Model concentration directory: "
+              f"{mod_fields['MODEL_DIR']}/"
+              f"{mod_fields['CONCENTRATION_FILE_FORMAT']}")
+        raise ValueError("Model concentration files are empty.")
     
     # If not reprocess, remove 
     if sat_fields["REPROCESS"].lower() == "false":
