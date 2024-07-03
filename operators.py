@@ -104,7 +104,8 @@ def apply_operator_to_chunks(model_conc_files,
                 mod_i, sat_i.where(~missing_times, drop=True), satellite_name))
         if config[satellite_name]["SAVE_SATELLITE_DATA"].lower() == "true":
             satellite_columns.append(
-                sat_i[["SATELLITE_COLUMN", "LATITUDE", "LONGITUDE", "TIME"]])
+                sat_i.drop(["PRESSURE_EDGES", "PRESSURE_WEIGHT", 
+                            "AVERAGING_KERNEL", "PRIOR_PROFILE"]))
 
         # Step up i
         i += file_length_threshold
