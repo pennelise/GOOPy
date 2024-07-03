@@ -60,8 +60,8 @@ def read_satellite_file(file_path, satellite_name):
     # Remove quality_flag if it isn't present in the fields
     fields = {k : v for k, v in fields.items() if v.lower() != 'none'}
 
-    # Open the file and subset
-    satellite = xr.open_dataset(file_path)[list(fields.values())]
+    # Open the file (and remove subsetting because we want to keep variables)
+    satellite = xr.open_dataset(file_path)#[list(fields.values())]
 
     # Rename satellite dimension names to the standard (as defined in 
     # config.yaml)
