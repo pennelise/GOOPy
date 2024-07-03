@@ -1,18 +1,12 @@
 import xarray as xr
 import numpy as np
-import yaml
-# from gcpy import read_geos_chem_file
-
-with open("config.yaml", "r", encoding="utf8") as f:
-    config = yaml.safe_load(f)
-
 
 def _open_geoschem(file_path, variables):
     preprocess = lambda ds : ds[variables]
     return xr.open_mfdataset(file_path, preprocess=preprocess)
 
 
-def read_geoschem_file(file_path_conc, file_path_edges):
+def read_geoschem_file(file_path_conc, file_path_edges, data_fields):
     '''
     Eventually, this should be switched to a gcpy function. 
     From Elise:
@@ -20,12 +14,10 @@ def read_geoschem_file(file_path_conc, file_path_edges):
         # use gcpy function for reading GEOS-Chem files, may need to wrap
     '''
     # Define the variables that should be maintained when opening the files
-    fields = config["MODEL"]["DATA_FIELDS"]
-
-    conc_vars = dict(fields)
+    conc_vars = dict(data_fields)
     del conc_vars["PRESSURE_EDGES"]
 
-    edge_vars = dict(fields)
+    edge_vars = dict(data_fields)
     del edge_vars["CONC_AT_PRESSURE_CENTERS"]
 
     # Open and combine edge and concentration files
@@ -33,7 +25,7 @@ def read_geoschem_file(file_path_conc, file_path_edges):
                    _open_geoschem(file_path_edges, list(edge_vars.values()))])
 
     # Rename the fields to the standard (as defined in config.yaml)
-    rename_fields = {v : k for k, v in fields.items()}
+    rename_fields = {v : k for k, v in data_fields.items()}
     gc = gc.rename(rename_fields)
 
     # Transpose
@@ -44,7 +36,7 @@ def read_geoschem_file(file_path_conc, file_path_edges):
     return gc
 
 
-def read_satellite_file(file_path, satellite_name):
+def read_satellite_file(file_path, data_fields):
     '''
     This generic parser assumes that the data is a netcdf with a single, 
     main group with variables as defined in the config.yaml file. It 
@@ -54,24 +46,21 @@ def read_satellite_file(file_path, satellite_name):
     may require filtering along multiple criteria. Please write your own 
     parser in these cases.
     '''
-    # Get the fields for the satellite specified as defined in config.yaml
-    fields = config[satellite_name]["DATA_FIELDS"]
-    
     # Remove quality_flag if it isn't present in the fields
-    fields = {k : v for k, v in fields.items() if v.lower() != 'none'}
+    data_fields = {k : v for k, v in data_fields.items() if v.lower() != 'none'}
 
     # Open the file (and remove subsetting because we want to keep variables)
-    satellite = xr.open_dataset(file_path)#[list(fields.values())]
+    satellite = xr.open_dataset(file_path)#[list(data_fields.values())]
 
     # Rename satellite dimension names to the standard (as defined in 
     # config.yaml)
-    rename_fields = {v : k for k, v in fields.items()}
+    rename_fields = {v : k for k, v in data_fields.items()}
     satellite = satellite.rename(rename_fields)
 
     # Return the data
     return satellite
 
-def read_TROPOMI_vXX_science(file_path, satellite_name="TROPOMI_vXX"):
+def read_TROPOMI_vXX_science(file_path, data_fields):
     # read TROPOMI file
     # grab tropomi data columns specified in config and rename them to 
     # standard naming
@@ -81,16 +70,15 @@ def read_TROPOMI_vXX_science(file_path, satellite_name="TROPOMI_vXX"):
     pass
 
 
-def read_GOSAT_vXX(file_path, satellite_name="GOSAT_vXX"):
+def read_GOSAT_vXX(file_path, data_fields):
     # read GOSAT file
     # grab tropomic data columns specified in config and rename them to standard naming
     pass
 
 
-def read_OCO2_v11_1_preprocessed(file_path, 
-                                 satellite_name="OCO2_v11.1_preprocessed"):
+def read_OCO2_v11_1_preprocessed(file_path, data_fields):
     # Use the standard parser first
-    satellite = read_satellite_file(file_path, satellite_name)
+    satellite = read_satellite_file(file_path, data_fields)
     
     # Convert units from ppm to mol/mol
     satellite["PRIOR_PROFILE"] *= 1e-6
