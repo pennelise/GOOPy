@@ -50,7 +50,9 @@ def apply_operator_to_chunks(model_conc_files,
                 mod_i, sat_i.where(~missing_times, drop=True), 
                 config["LOCAL_SETTINGS"]["PARSER"]))
         if config["LOCAL_SETTINGS"]["SAVE_SATELLITE_DATA"].lower() == "true":
-            satellite_columns.append(sat_i)
+            satellite_columns.append(
+                sat_i.drop(['PRESSURE_EDGES', 'PRESSURE_WEIGHT',
+                            'AVERAGING_KERNEL', 'PRIOR_PROFILE', 'N_EDGES']))
 
         # Step up i
         i += config["LOCAL_SETTINGS"]["FILE_LENGTH_THRESHOLD"]
