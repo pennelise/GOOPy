@@ -48,7 +48,7 @@ def apply_operator_to_chunks(model_conc_files,
         model_columns.append(
             operators.get_model_columns(
                 mod_i, sat_i.where(~missing_times, drop=True), 
-                config["LOCAL_SETTINGS"]["PARSER"]))
+                config["LOCAL_SETTINGS"]["SATELLITE_NAME"]))
         if config["LOCAL_SETTINGS"]["SAVE_SATELLITE_DATA"].lower() == "true":
             satellite_columns.append(
                 sat_i.drop(['PRESSURE_EDGES', 'PRESSURE_WEIGHT',

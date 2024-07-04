@@ -76,7 +76,7 @@ def get_gc_files_for_dates(file_names, dates):
 def get_satellite_parser(config):
     # Get the function that opens the satellite data. Check that the function
     # has a default value for satellite_name. If not, use satellite_name
-    satellite_name = config["LOCAL_SETTINGS"]["PARSER"]
+    satellite_name = config["LOCAL_SETTINGS"]["SATELLITE_NAME"]
     read_sat = getattr(parsers, config[satellite_name]["PARSER"])
     name_param = inspect.signature(read_sat).parameters["data_fields"]
     if name_param.default is not name_param.empty:

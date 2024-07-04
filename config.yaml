@@ -2,7 +2,7 @@
 LOCAL_SETTINGS:
   REPROCESS: 'True'
   SAVE_SATELLITE_DATA: 'True'
-  PARSER: 'OCO2_v11.1_preprocessed'
+  SATELLITE_NAME: 'OCO2_v11.1_preprocessed'
   OBS_DIR: '/nobackupp27/hnesser/CO2_inversion/observations/OCO-2'
   OBS_FILE_FORMAT: 'oco2_20141*.nc'
   MODEL_DIR: '/nobackupp27/hnesser/CO2_inversion/validation_dirs/gc_4x5_47L_merra2_CO2/OutputDir'
