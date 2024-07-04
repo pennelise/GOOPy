@@ -50,7 +50,7 @@ def read_satellite_file(file_path, data_fields):
     data_fields = {k : v for k, v in data_fields.items() if v.lower() != 'none'}
 
     # Open the file (and remove subsetting because we want to keep variables)
-    satellite = xr.open_dataset(file_path)#[list(data_fields.values())]
+    satellite = xr.open_dataset(file_path)
 
     # Rename satellite dimension names to the standard (as defined in 
     # config.yaml)
