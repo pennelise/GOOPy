@@ -1,11 +1,7 @@
-import os
 import yaml
 import numpy as np
-import xarray as xr
 from interpolation import VerticalGrid
 import utilities as util
-import parsers
-
 
 with open("config.yaml", "r", encoding="utf8") as f:
     config = yaml.safe_load(f)
