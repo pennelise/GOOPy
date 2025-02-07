@@ -8,6 +8,8 @@ Mass-conserving vertical interpolation and satellite observation operator for in
 
 Discussed in this issue for GCPy: https://github.com/geoschem/gcpy/issues/242
 
+[![DOI](https://zenodo.org/badge/642558243.svg)](https://doi.org/10.5281/zenodo.14834528)
+
 ## Installing GOOPy
 
 - GOOPy is currently just a set of python code you can clone to your laptop - it's not pip-installable (but we plan to add this soon!)
