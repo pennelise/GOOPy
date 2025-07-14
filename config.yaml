@@ -2,13 +2,13 @@
 LOCAL_SETTINGS:
   REPROCESS: 'True'
   SAVE_SATELLITE_DATA: 'True'
-  PARSER: 'OCO2_v11.1_preprocessed'
-  OBS_DIR: '/Users/Elise/Downloads/OCO-2'
+  SATELLITE_NAME: 'OCO2_v11.1_preprocessed'
+  OBS_DIR: '/nobackupp27/hnesser/CO2_inversion/observations/OCO-2'
   OBS_FILE_FORMAT: 'oco2_20141*.nc'
-  MODEL_DIR: '/Users/Elise/Downloads/GEOSChem_201410'
+  MODEL_DIR: '/nobackupp27/hnesser/CO2_inversion/validation_dirs/gc_4x5_47L_merra2_CO2/OutputDir'
   LEVEL_EDGE_FILE_FORMAT: 'GEOSChem.LevelEdgeDiags.*.nc4' 
   CONCENTRATION_FILE_FORMAT: 'GEOSChem.SpeciesConc.*.nc4' 
-  SAVE_DIR: '/Users/Elise/Downloads/outdir'
+  SAVE_DIR: '/nobackupp27/hnesser/CO2_inversion/validation_dirs/gc_4x5_47L_merra2_CO2/ProcessedDir'
   FILE_LENGTH_THRESHOLD: 1.0e+6
 
 # Observations
