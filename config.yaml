@@ -2,13 +2,15 @@
 LOCAL_SETTINGS:
   REPROCESS: 'True'
   SAVE_SATELLITE_DATA: 'True'
-  SATELLITE_NAME: 'OCO2_v11.1_preprocessed'
-  OBS_DIR: '/nobackupp27/hnesser/CO2_inversion/observations/OCO-2'
-  OBS_FILE_FORMAT: 'oco2_20141*.nc'
-  MODEL_DIR: '/nobackupp27/hnesser/CO2_inversion/validation_dirs/gc_4x5_47L_merra2_CO2/OutputDir'
+  SAVE_INTERPOLATION: 'True'
+  SATELLITE_NAME: satellitesatellite
+  OBS_DIR: obsdirobsdir
+  OBS_FILE_FORMAT: filefile
+  MODEL_LEVEL_EDGE_DIR: priordirpriordir
   LEVEL_EDGE_FILE_FORMAT: 'GEOSChem.LevelEdgeDiags.*.nc4' 
+  MODEL_CONCENTRATION_DIR: moddirmoddir
   CONCENTRATION_FILE_FORMAT: 'GEOSChem.SpeciesConc.*.nc4' 
-  SAVE_DIR: '/nobackupp27/hnesser/CO2_inversion/validation_dirs/gc_4x5_47L_merra2_CO2/ProcessedDir'
+  SAVE_DIR: savedirsavedir
   FILE_LENGTH_THRESHOLD: 1.0e+6
 
 # Observations
@@ -25,7 +27,7 @@ OCO2_v11.1_preprocessed:
     TIME: 'time'
     AVERAGING_KERNEL: 'xco2_averaging_kernel'
     PRIOR_PROFILE: 'co2_profile_apriori'
-    SATELLITE_COLUMN: 'xco2'
+    SATELLITE_COLUMN: 'xco2_x2019'
     QUALITY_FLAG: 'none'
 
 TROPOMIvXX: # version is specified for each instrument
@@ -69,7 +71,7 @@ GOSATv9_0:
 MODEL:
   DATA_FIELDS:
     PRESSURE_EDGES: 'Met_PEDGE' # Not PEDGEDRY?
-    CONC_AT_PRESSURE_CENTERS: 'SpeciesConcVV_CO2' # todo: CO2 vs CH4. 
+    CONC_AT_PRESSURE_CENTERS: 'SpeciesConcVV_.*' # todo: CO2 vs CH4. 
     LATITUDE: 'lat'
     LONGITUDE: 'lon'
     TIME: 'time'
