@@ -1,5 +1,12 @@
-import numpy as np
+import os
 
+os.environ['OPENBLAS_NUM_THREADS'] = '8'
+os.environ['MPI_NUM_THREADS'] = '8'
+os.environ['MKL_NUM_THREADS'] = '8'
+os.environ['OMP_NUM_THREADS'] = '8'
+
+import numpy as np
+import time
 
 class VerticalGrid:
     """
@@ -20,13 +27,19 @@ class VerticalGrid:
         model_edges,
         satellite_edges,
         interpolate_to_centers_or_edges,
+        save_interpolation,
+        save_dir
     ):
         self.model_conc_at_layers = model_conc_at_layers
         self.model_edges = model_edges
         self.satellite_edges = satellite_edges
         self.interpolate_to_centers_or_edges = interpolate_to_centers_or_edges
+        self.save_interpolation = save_interpolation
+        self.save_dir = save_dir
 
+        print('Expanding profile dims : ', time.time())
         self.__expand_profile_dims()
+        print('Checking input structure : ', time.time())
         self.__check_input_structure()
 
         self.n_obs = self.model_conc_at_layers.shape[0]
@@ -49,14 +62,14 @@ class VerticalGrid:
 
     def __check_input_structure(self):
         assert (
-            self.model_conc_at_layers.ndim == 2
-        ), "GEOS-Chem methane layers must be 2D (nobs x nlevels), or 1D (nlevels)."
+            self.model_conc_at_layers.ndim >= 2
+        ), "GEOS-Chem methane layers must be 2D (nobs x nlevels) or 3D (nobs x nlevels x nspecies)."
         assert (
             self.model_edges.ndim == 2
-        ), "GEOS-Chem pressure edges must be 2D (nobs x nlevels), or 1D (nlevels)."
+        ), "GEOS-Chem pressure edges must be 2D (nobs x nlevels)."
         assert (
             self.satellite_edges.ndim == 2
-        ), "Satellite pressure edges must be 2D (nobs x nlevels), or 1D (nlevels)."
+        ), "Satellite pressure edges must be 2D (nobs x nlevels)."
 
         assert np.all(
             np.diff(self.model_edges) < 0
@@ -143,35 +156,58 @@ class VerticalGrid:
 
     def interpolate(self):
         """
-        Interpolate GEOS-Chem methane to satellite edges OR centers.
+        Interpolate GEOS-Chem methane to satellite edges OR centers. Use
+        a pre-calculating interpolation_map if available--this is to optimize 
+        Jacobian construction.
         """
         expanded_model_edges = self.expand_model_to_satellite_range()
 
-        if self.interpolate_to_centers_or_edges == "centers":
-            interpolation_map = self.get_interpolation_map(
-                model_edges=expanded_model_edges, satellite_edges=self.satellite_edges
-            )
-            partial_column_to_conc = 1 / np.abs(np.diff(self.satellite_edges))  # M_out*
-
-        elif self.interpolate_to_centers_or_edges == "edges":
+        if self.interpolate_to_centers_or_edges == "edges":
             hprime_satellite_edges = self.get_hprime_satellite_edges()
-            interpolation_map = self.get_interpolation_map(
-                model_edges=expanded_model_edges, satellite_edges=hprime_satellite_edges
-            )  # interpolates model to hprime satellite layers
-            partial_column_to_conc = 1 / np.abs(
-                np.diff(hprime_satellite_edges)
-            )  # M_out*
 
-        else:
-            raise ValueError(
-                f"interpolate_to_centers_or_edges must be 'centers' or 'edges', not {self.interpolate_to_centers_or_edges}"
-            )
+        # Get the interpolation map
+        try:
+            print('Load interpolation : ', time.time())
+            interpolation_map = np.load(f"{self.save_dir}_interpolation.npy")
+            print("  Using pre-computed interpolation map.")
+        except:
+            print("  Computing interpolation map.")
+            print('Compute interpolation : ', time.time())
+            if self.interpolate_to_centers_or_edges == "centers":
+                interpolation_map = self.get_interpolation_map(
+                    model_edges=expanded_model_edges, 
+                    satellite_edges=self.satellite_edges
+                )
+            elif self.interpolate_to_centers_or_edges == "edges":
+                interpolation_map = self.get_interpolation_map(
+                    model_edges=expanded_model_edges, 
+                    satellite_edges=hprime_satellite_edges
+                )  # interpolates model to hprime satellite layers
+            else:
+                raise ValueError(
+                    f"interpolate_to_centers_or_edges must be 'centers' or 'edges',"
+                    f" not {self.interpolate_to_centers_or_edges}"
+                )
+            
+            # Save out the interpolation map
+            if self.save_interpolation.lower() == "true":
+                np.save(f"{self.save_dir}_interpolation.npy", interpolation_map)
 
+        print('Get partial column : ', time.time())
+        # Get the partial column in concentration space? # M_out*
+        if self.interpolate_to_centers_or_edges == "centers":
+            partial_column_to_conc = 1 / np.abs(np.diff(self.satellite_edges))
+        elif self.interpolate_to_centers_or_edges == "edges":
+            partial_column_to_conc = 1 / np.abs(np.diff(hprime_satellite_edges))
+
+        # Calculate the satellite partial column
+        print('Calculate satellite partial column : ', time.time())
         satellite_partial_columns = (
-            interpolation_map * self.model_conc_at_layers[:, :, None]
-        ).sum(
-            axis=1
-        )  # matrix multiplication across nobs model concentration vectors
-        satellite_conc = partial_column_to_conc * satellite_partial_columns
+            interpolation_map[:, :, :, None] * 
+            self.model_conc_at_layers[:, :, None, :]
+        ).sum(axis=1)  # matrix multiplication across nobs model vectors
+        print('Step 2 : ', time.time())
+        satellite_conc = (partial_column_to_conc[:, :, None] * 
+                          satellite_partial_columns)
 
         return satellite_conc
