@@ -6,7 +6,6 @@ os.environ['MKL_NUM_THREADS'] = '8'
 os.environ['OMP_NUM_THREADS'] = '8'
 
 import numpy as np
-import time
 
 class VerticalGrid:
     """
@@ -37,9 +36,7 @@ class VerticalGrid:
         self.save_interpolation = save_interpolation
         self.save_dir = save_dir
 
-        print('Expanding profile dims : ', time.time())
         self.__expand_profile_dims()
-        print('Checking input structure : ', time.time())
         self.__check_input_structure()
 
         self.n_obs = self.model_conc_at_layers.shape[0]
@@ -167,12 +164,10 @@ class VerticalGrid:
 
         # Get the interpolation map
         try:
-            print('Load interpolation : ', time.time())
             interpolation_map = np.load(f"{self.save_dir}_interpolation.npy")
             print("  Using pre-computed interpolation map.")
         except:
             print("  Computing interpolation map.")
-            print('Compute interpolation : ', time.time())
             if self.interpolate_to_centers_or_edges == "centers":
                 interpolation_map = self.get_interpolation_map(
                     model_edges=expanded_model_edges, 
@@ -193,7 +188,6 @@ class VerticalGrid:
             if self.save_interpolation.lower() == "true":
                 np.save(f"{self.save_dir}_interpolation.npy", interpolation_map)
 
-        print('Get partial column : ', time.time())
         # Get the partial column in concentration space? # M_out*
         if self.interpolate_to_centers_or_edges == "centers":
             partial_column_to_conc = 1 / np.abs(np.diff(self.satellite_edges))
@@ -201,12 +195,10 @@ class VerticalGrid:
             partial_column_to_conc = 1 / np.abs(np.diff(hprime_satellite_edges))
 
         # Calculate the satellite partial column
-        print('Calculate satellite partial column : ', time.time())
         satellite_partial_columns = (
             interpolation_map[:, :, :, None] * 
             self.model_conc_at_layers[:, :, None, :]
         ).sum(axis=1)  # matrix multiplication across nobs model vectors
-        print('Step 2 : ', time.time())
         satellite_conc = (partial_column_to_conc[:, :, None] * 
                           satellite_partial_columns)
 
