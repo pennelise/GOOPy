@@ -1,10 +1,42 @@
+import os
+
+os.environ['OPENBLAS_NUM_THREADS'] = '8'
+os.environ['MPI_NUM_THREADS'] = '8'
+os.environ['MKL_NUM_THREADS'] = '8'
+os.environ['OMP_NUM_THREADS'] = '8'
+
 import xarray as xr
 import numpy as np
+import re
+import time
 
 def _open_geoschem(file_path, variables):
-    preprocess = lambda ds : ds[variables]
-    return xr.open_mfdataset(file_path, preprocess=preprocess)
+    # Open the dataset
+    # data = xr.open_mfdataset(file_path, parallel=True)
+    data = []
+    for f in file_path:
+        data.append(xr.open_dataset(f).compute())
+    data = xr.merge(data)
 
+    # Now we get the variables we want, accounting for regex options. We also 
+    # save out a dictionary that will rename the variables as needed to the 
+    # standard names.
+    save_vars = {}
+    for default_name, var_pattern in variables.items():
+        # If the item looks like a regex (contains special characters like '*'), 
+        # treat it as regex
+        if re.search(r"[\*]", var_pattern):
+            save_vars.update(
+                {var : 
+                 f"{default_name}_{var.split(var_pattern.split('.*')[0])[-1]}" 
+                 for var in data.variables if re.match(var_pattern, var)})
+        else:
+            # If it's an exact match, check if it's in the dataset
+            if var_pattern in data.variables:
+                save_vars.update({var_pattern : default_name})
+
+    # Return the subsetted data
+    return data[save_vars.keys()].rename(save_vars)
 
 def read_geoschem_file(file_path_conc, file_path_edges, data_fields):
     '''
@@ -14,6 +46,8 @@ def read_geoschem_file(file_path_conc, file_path_edges, data_fields):
         # use gcpy function for reading GEOS-Chem files, may need to wrap
     '''
     # Define the variables that should be maintained when opening the files
+    ## For concentration files, keep everything except PRESSURE_EDGES. Also,
+    ## 
     conc_vars = dict(data_fields)
     del conc_vars["PRESSURE_EDGES"]
 
@@ -21,12 +55,9 @@ def read_geoschem_file(file_path_conc, file_path_edges, data_fields):
     del edge_vars["CONC_AT_PRESSURE_CENTERS"]
 
     # Open and combine edge and concentration files
-    gc = xr.merge([_open_geoschem(file_path_conc, list(conc_vars.values())),
-                   _open_geoschem(file_path_edges, list(edge_vars.values()))])
-
-    # Rename the fields to the standard (as defined in config.yaml)
-    rename_fields = {v : k for k, v in data_fields.items()}
-    gc = gc.rename(rename_fields)
+    print('Merging model data : ', time.time())
+    gc = xr.merge([_open_geoschem(file_path_conc, conc_vars),
+                   _open_geoschem(file_path_edges, edge_vars)])
 
     # Transpose
     gc = gc.transpose("TIME", "LONGITUDE", "LATITUDE", "LEV", "ILEV")
@@ -84,6 +115,10 @@ def read_OCO2_v11_1_preprocessed(file_path, data_fields):
     satellite["PRIOR_PROFILE"] *= 1e-6
     satellite["SATELLITE_COLUMN"] *= 1e-6
 
+    # Filter (we will comment this out for the final round of iterations)
+    satellite = satellite.compute()
+# # # # # #     satellite = satellite.where(satellite["type_flag"] < 2, drop=True)
+    
     return satellite
 
 
