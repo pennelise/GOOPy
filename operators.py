@@ -1,21 +1,27 @@
-import yaml
+import os
+
+os.environ['OPENBLAS_NUM_THREADS'] = '8'
+os.environ['MPI_NUM_THREADS'] = '8'
+os.environ['MKL_NUM_THREADS'] = '8'
+os.environ['OMP_NUM_THREADS'] = '8'
+
 import numpy as np
+import xarray as xr
 from interpolation import VerticalGrid
 import utilities as util
 
-with open("config.yaml", "r", encoding="utf8") as f:
-    config = yaml.safe_load(f)
-
 def apply_averaging_kernel(model_on_satellite_levels, satellite):
-    model_column = np.sum(satellite["PRESSURE_WEIGHT"]
-                          * (satellite["PRIOR_PROFILE"] 
-                             + satellite["AVERAGING_KERNEL"]
+    model_column = np.sum(satellite["PRESSURE_WEIGHT"].values[:, :, None]
+                          * (satellite["PRIOR_PROFILE"].values[:, :, None] 
+                             + satellite["AVERAGING_KERNEL"].values[:, :, None]
                              * (model_on_satellite_levels 
-                                - satellite["PRIOR_PROFILE"])),
+                                - satellite["PRIOR_PROFILE"].values[:, :, None])),
                                 axis=1)
     return  model_column
 
-def get_model_columns(model, satellite, satellite_name):
+
+def get_model_columns(model, satellite, avker_center_or_edges,
+                      save_interpolation, save_dir):
     """
     generic function to apply an operator to a satellite
     takes:
@@ -24,21 +30,28 @@ def get_model_columns(model, satellite, satellite_name):
     """
     # Get the spatial and temporal indices linking each satellite observation
     # back to the model grid and apply them to the model data
-    model = util.colocate_obs(model, satellite)
+    model = util.colocate_obs(model, satellite, save_dir)
 
     # Create an instance of the VerticalGrid class and interpolate the model
     # onto satellite levels
+    conc_vars = [
+        v for v in model.variables 
+        if v[:len("CONC_AT_PRESSURE_CENTERS")] == "CONC_AT_PRESSURE_CENTERS"]
+    # all_model_columns = xr.Dataset(coords={"N_OBS" : satellite["N_OBS"]})
     model_on_satellite_levels = VerticalGrid(
-        model["CONC_AT_PRESSURE_CENTERS"].values,
+        np.stack([model[v].values for v in conc_vars], axis=-1),
         model["PRESSURE_EDGES"].values,
         satellite["PRESSURE_EDGES"].values,
-        config[satellite_name]["AVERAGING_KERNEL_USES_CENTERS_OR_EDGES"])
+        avker_center_or_edges,
+        save_interpolation,
+        save_dir)
     model_on_satellite_levels = model_on_satellite_levels.interpolate()
 
     # Apply the averaging kernel
-    model_columns = apply_averaging_kernel(
-        model_on_satellite_levels, satellite)
-    
+    model_columns = apply_averaging_kernel(model_on_satellite_levels, satellite)
+    model_columns = xr.Dataset(
+        {v: (['N_OBS'], model_columns[:, i]) for i, v in enumerate(conc_vars)},
+        coords={'N_OBS': satellite["N_OBS"]})
     return model_columns
 
 
