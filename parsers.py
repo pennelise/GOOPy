@@ -8,7 +8,6 @@ os.environ['OMP_NUM_THREADS'] = '8'
 import xarray as xr
 import numpy as np
 import re
-import time
 
 def _open_geoschem(file_path, variables):
     # Open the dataset
@@ -55,7 +54,6 @@ def read_geoschem_file(file_path_conc, file_path_edges, data_fields):
     del edge_vars["CONC_AT_PRESSURE_CENTERS"]
 
     # Open and combine edge and concentration files
-    print('Merging model data : ', time.time())
     gc = xr.merge([_open_geoschem(file_path_conc, conc_vars),
                    _open_geoschem(file_path_edges, edge_vars)])
 
@@ -117,8 +115,8 @@ def read_OCO2_v11_1_preprocessed(file_path, data_fields):
 
     # Filter (we will comment this out for the final round of iterations)
     satellite = satellite.compute()
-# # # # # #     satellite = satellite.where(satellite["type_flag"] < 2, drop=True)
-    
+    satellite = satellite.where(satellite["type_flag"] < 2, drop=True)
+
     return satellite
 
 
