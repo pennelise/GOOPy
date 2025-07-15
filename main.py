@@ -1,4 +1,10 @@
 import os
+
+os.environ['OPENBLAS_NUM_THREADS'] = '8'
+os.environ['MPI_NUM_THREADS'] = '8'
+os.environ['MKL_NUM_THREADS'] = '8'
+os.environ['OMP_NUM_THREADS'] = '8'
+
 import yaml
 import numpy as np
 import xarray as xr
@@ -17,7 +23,7 @@ def apply_operator_to_chunks(model_conc_files,
     i = 0
     model_columns = []
     satellite_columns = []
-    while i < satellite.dims["N_OBS"]:
+    while i < satellite.sizes["N_OBS"]:
         # Subset the satellite data
         sat_i = satellite.isel(
             N_OBS=slice(
@@ -25,7 +31,7 @@ def apply_operator_to_chunks(model_conc_files,
                 int(i + config["LOCAL_SETTINGS"]["FILE_LENGTH_THRESHOLD"])
             )
         )
-    
+
         # Get the dates that need to be processed
         process_dates = np.unique(sat_i["TIME"].dt.strftime("%Y-%m-%d"))
 
@@ -34,6 +40,7 @@ def apply_operator_to_chunks(model_conc_files,
             util.get_gc_files_for_dates(model_conc_files, process_dates),
             util.get_gc_files_for_dates(model_edge_files, process_dates),
             config["MODEL"]["DATA_FIELDS"])
+        mod_i = mod_i.compute()
 
         # Check for times that are missing in the satellite data and continue
         # if there are no overlapping itmes
@@ -45,14 +52,22 @@ def apply_operator_to_chunks(model_conc_files,
             continue
 
         # Run the column operator
+        satellite_name = config["LOCAL_SETTINGS"]["SATELLITE_NAME"]
         model_columns.append(
             operators.get_model_columns(
-                mod_i, sat_i.where(~missing_times, drop=True), 
-                config["LOCAL_SETTINGS"]["SATELLITE_NAME"]))
+                mod_i, sat_i.where(~missing_times, drop=True),
+                config[satellite_name]["AVERAGING_KERNEL_USES_CENTERS_OR_EDGES"],
+                config["LOCAL_SETTINGS"]["SAVE_INTERPOLATION"],
+                f'{config["LOCAL_SETTINGS"]["OBS_DIR"]}/'
+                'operator_components/'
+                f'{process_dates.min()}_{process_dates.max()}_{int(i):04d}'
+                )
+            )
         if config["LOCAL_SETTINGS"]["SAVE_SATELLITE_DATA"].lower() == "true":
             satellite_columns.append(
-                sat_i.drop(['PRESSURE_EDGES', 'PRESSURE_WEIGHT',
-                            'AVERAGING_KERNEL', 'PRIOR_PROFILE', 'N_EDGES']))
+                sat_i.drop_vars(['PRESSURE_EDGES', 'PRESSURE_WEIGHT',
+                                 'AVERAGING_KERNEL', 'PRIOR_PROFILE',
+                                 'N_EDGES']))
 
         # Step up i
         i += config["LOCAL_SETTINGS"]["FILE_LENGTH_THRESHOLD"]
@@ -60,7 +75,9 @@ def apply_operator_to_chunks(model_conc_files,
     # Concatenate together, combine, and return
     if len(model_columns) > 0:
         model_columns = xr.concat(model_columns, dim="N_OBS")
-        model_columns = model_columns.rename("MODEL_COLUMN")
+        rename = {v : v.replace('CONC_AT_PRESSURE_CENTERS', 'MODEL_COLUMN')
+                  for v in model_columns.data_vars}
+        model_columns = model_columns.rename(rename)
         if config["LOCAL_SETTINGS"]["SAVE_SATELLITE_DATA"].lower() == "true":
             satellite_columns = xr.concat(satellite_columns, dim="N_OBS")
             model_columns = xr.merge([model_columns, satellite_columns])
@@ -75,6 +92,13 @@ def apply_operator(config):#satellite_name, file_length_threshold=1e6):
     # Make save out directory
     if not os.path.exists(config["LOCAL_SETTINGS"]["SAVE_DIR"]):
         os.makedirs(config["LOCAL_SETTINGS"]["SAVE_DIR"])
+
+    # Also make a directory to save out the components of the operator (e.g.,
+    # space and time indices and the interpolation map) if needed.
+    if config["LOCAL_SETTINGS"]["SAVE_INTERPOLATION"]:
+        save_dir = f'{config["LOCAL_SETTINGS"]["OBS_DIR"]}/operator_components'
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
 
     # Obtain a list of the satellite and GEOS-Chem files.
     files = util.get_file_lists(config["LOCAL_SETTINGS"])
@@ -114,6 +138,7 @@ def apply_operator(config):#satellite_name, file_length_threshold=1e6):
         satellite = satellite.where(
             satellite["TIME"].dt.strftime("%Y-%m-%d").isin(satellite_dates), 
             drop=True)
+        satellite = satellite.compute()
 
         # Next, apply the operator
         model_columns = apply_operator_to_chunks(
