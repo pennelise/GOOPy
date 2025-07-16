@@ -30,18 +30,13 @@ OCO2_v11.1_preprocessed:
     SATELLITE_COLUMN: 'xco2_x2019'
     QUALITY_FLAG: 'none'
 
-TROPOMIvXX: # version is specified for each instrument
+TROPOMI: 
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
-  PARSER: 'read_TROPOMIvXX'
+  PARSER: 'read_TROPOMI'
   DATA_FIELDS: 
     N_OBS: 'nobs'
-    N_EDGES: 'nlevels'
-    PRESSURE_EDGES: 'pressure_edges' # This variable does not
-    # exist in the TROPOMI files and needs to be created in the
-    # parser.
-    # N_CENTERS: 'nlayers'
-    # SURFACE_PRESSURE: 'surface_pressure'
-    # DELTA_PRESSURE: 'dp' 
+    N_EDGES: 'none'
+    PRESSURE_EDGES: 'none' 
     PRESSURE_WEIGHT: 'dry_air_subcolumns'
     LATITUDE: 'latitude_center'
     LONGITUDE: 'longitude_center'
@@ -50,6 +45,22 @@ TROPOMIvXX: # version is specified for each instrument
     PRIOR_PROFILE: 'ch4_profile_apriori'
     SATELLITE_COLUMN: 'xch4'
     QUALITY_FLAG: 'none'
+
+TROPOMI_blended: 
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
+  PARSER: 'read_TROPOMI_blended'
+  DATA_FIELDS: 
+    N_OBS: 'nobs'
+    N_EDGES: 'none'        # These variables do not exist and are  
+    PRESSURE_EDGES: 'none' # created in the parser
+    PRESSURE_WEIGHT: 'dry_air_subcolumns'
+    LATITUDE: 'latitude'
+    LONGITUDE: 'longitude'
+    TIME: 'time_utc'
+    AVERAGING_KERNEL: 'column_averaging_kernel'
+    PRIOR_PROFILE: 'methane_profile_apriori'
+    SATELLITE_COLUMN: 'methane_mixing_ratio_blended'
+    QUALITY_FLAG: 'qa_value'
 
 GOSATv9_0:
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'

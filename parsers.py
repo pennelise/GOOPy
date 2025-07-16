@@ -37,6 +37,7 @@ def _open_geoschem(file_path, variables):
     # Return the subsetted data
     return data[save_vars.keys()].rename(save_vars)
 
+
 def read_geoschem_file(file_path_conc, file_path_edges, data_fields):
     '''
     Eventually, this should be switched to a gcpy function. 
@@ -46,7 +47,7 @@ def read_geoschem_file(file_path_conc, file_path_edges, data_fields):
     '''
     # Define the variables that should be maintained when opening the files
     ## For concentration files, keep everything except PRESSURE_EDGES. Also,
-    ## 
+    ## get rid of CONC_AT_PRESSURE_CENTERS for edge files.
     conc_vars = dict(data_fields)
     del conc_vars["PRESSURE_EDGES"]
 
@@ -81,23 +82,52 @@ def read_satellite_file(file_path, data_fields):
     # Open the file (and remove subsetting because we want to keep variables)
     satellite = xr.open_dataset(file_path)
 
-    # Rename satellite dimension names to the standard (as defined in 
-    # config.yaml)
+    # Rename satellite dimension names to the standard from config.yaml
     rename_fields = {v : k for k, v in data_fields.items()}
     satellite = satellite.rename(rename_fields)
 
     # Return the data
     return satellite
 
-def read_TROPOMI_vXX_science(file_path, data_fields):
-    # read TROPOMI file
-    # grab tropomi data columns specified in config and rename them to 
-    # standard naming
-    # First pass of a TROPOMI science product parser (without using any 
-    # TROPOMI data)
+def read_TROPOMI(file_path, data_fields):
+    # Remove quality_flag if it isn't present in the fields
+    data_fields = {k : v for k, v in data_fields.items() if v.lower() != 'none'}
+
+    satellite = xr.open_dataset(file_path)
+
+
+    # Correct units from molecules/cm2 to mol/m2
+    satellite['ch4_profile_apriori'] *= 1e4/6.02214e23
+    satellite['dry_air_subcolumns'] *= 1e4/6.02214e23
+
+
+    # d = xr.open_dataset(file, group='diagnostics')    
 
     pass
 
+
+def read_TROPOMI_blended(file_path, data_fields):
+    # Remove none fields
+    data_fields = {k : v for k, v in data_fields.items() if v.lower() != 'none'}
+
+    # Open the satellite file. The blended data has all fields in one group.
+    satellite = xr.open_dataset(file_path)
+
+    # Rename satellite dimension names to the standard from config.yaml)
+    rename_fields = {v : k for k, v in data_fields.items()}
+    satellite = satellite.rename(rename_fields)
+
+    # Get the pressure edges (Pa) based on the TROPOMI surface and pressure 
+    # intervals. The pressure array is from TOA for consistency with other 
+    # TROPOMI objects.
+    z = satellite.layer.size
+    p_surface = satellite['surface_pressure'].values.reshape((-1, 1))
+    p_interval = satellite['pressure_interval'].values.reshape((-1, 1))
+    p_edges = p_surface - np.arange(z + 1).reshape((1, -1))*p_interval
+    p_edges = xr.DataArray(p_edges[:, ::-1], dims=['N_OBS', 'N_EDGES'])
+    satellite = satellite.assign(PRESSURE_EDGES=p_edges)
+
+    return satellite
 
 def read_GOSAT_vXX(file_path, data_fields):
     # read GOSAT file
