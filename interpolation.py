@@ -166,39 +166,37 @@ class VerticalGrid:
             expanded_model_edges = self.model_edges
 
         if self.interpolate_to_centers_or_edges == "edges":
-            hprime_satellite_edges = self.get_hprime_satellite_edges()
+            satellite_edges = self.get_hprime_satellite_edges()
+        elif self.interpolate_to_centers_or_edges == "centers":
+            satellite_edges = self.satellite_edges
+        else:
+            raise ValueError(
+                f"interpolate_to_centers_or_edges must be 'centers' or 'edges',"
+                f" not {self.interpolate_to_centers_or_edges}"
+            )
 
         # Get the interpolation map
         try:
             interpolation_map = np.load(f"{self.save_dir}_interpolation.npy")
             print("  Using pre-computed interpolation map.")
         except:
-            print("  Computing interpolation map.")
-            if self.interpolate_to_centers_or_edges == "centers":
-                interpolation_map = self.get_interpolation_map(
-                    model_edges=expanded_model_edges, 
-                    satellite_edges=self.satellite_edges
-                )
-            elif self.interpolate_to_centers_or_edges == "edges":
-                interpolation_map = self.get_interpolation_map(
-                    model_edges=expanded_model_edges, 
-                    satellite_edges=hprime_satellite_edges
-                )  # interpolates model to hprime satellite layers
-            else:
-                raise ValueError(
-                    f"interpolate_to_centers_or_edges must be 'centers' or 'edges',"
-                    f" not {self.interpolate_to_centers_or_edges}"
-                )
+            interpolation_map = self.get_interpolation_map(
+                model_edges=expanded_model_edges, 
+                satellite_edges=satellite_edges
+            )
             
             # Save out the interpolation map
             if self.save_interpolation.lower() == "true":
                 np.save(f"{self.save_dir}_interpolation.npy", interpolation_map)
 
         # Get the partial column in concentration space? # M_out*
-        if self.interpolate_to_centers_or_edges == "centers":
-            partial_column_to_conc = 1 / np.abs(np.diff(self.satellite_edges))
-        elif self.interpolate_to_centers_or_edges == "edges":
-            partial_column_to_conc = 1 / np.abs(np.diff(hprime_satellite_edges))
+        # This deals with the case where there are repeated values in the 
+        # satellite_edges, which happens mostly in the case of TCCON where
+        # we artificially fill the column with repeated values in the case
+        # where the column is truncated.
+        with np.errstate(divide='ignore', invalid='ignore'):
+            partial_column_to_conc = 1 / np.abs(np.diff(satellite_edges))
+        partial_column_to_conc = np.nan_to_num(partial_column_to_conc, 0)
 
         # Calculate the satellite partial column
         satellite_partial_columns = (
