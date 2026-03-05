@@ -6,10 +6,8 @@ os.environ['MKL_NUM_THREADS'] = '8'
 os.environ['OMP_NUM_THREADS'] = '8'
 
 import glob
-import inspect
 import numpy as np
 import xarray as xr
-import parsers
 
 def get_file_lists(local_config):
     '''
@@ -32,7 +30,7 @@ def get_file_lists(local_config):
     # Require that all of these lists contain files.
     if len(sat_files) == 0:
         print(f"Satellite directory: "
-              f"{local_config['OBS_DIR']}/{local_config['FILE_NAME_FORMAT']}")
+              f"{local_config['OBS_DIR']}/{local_config['OBS_FILE_FORMAT']}")
         raise ValueError("Satellite files are empty.")
     
     if len(model_edge_files) == 0:
@@ -80,25 +78,6 @@ def get_gc_dates(file_names):
 def get_gc_files_for_dates(file_names, dates):
     return file_names[np.in1d(get_gc_dates(file_names), dates)]
 
-
-def get_satellite_parser(config):
-    # Get the function that opens the satellite data. Check that the function
-    # has a default value for satellite_name. If not, use satellite_name
-    satellite_name = config["LOCAL_SETTINGS"]["SATELLITE_NAME"]
-    read_sat = getattr(parsers, config[satellite_name]["PARSER"])
-    name_param = inspect.signature(read_sat).parameters["data_fields"]
-    if name_param.default is not name_param.empty:
-        satellite_name = name_param.default
-    print(f"satellite_name : {satellite_name}")
-    print(f"parser : {config[satellite_name]['PARSER']}")
-
-    # Define the function
-    def read_satellite(file_path):
-        dataset = read_sat(file_path, config[satellite_name]["DATA_FIELDS"])
-        dataset = parsers.check_satellite_data(dataset)
-        return dataset
-    
-    return read_satellite
 
 def get_missing_times(satellite_times, model_times):
     satellite_times = satellite_times.dt.strftime("%Y-%m-%d.%H")
