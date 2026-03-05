@@ -17,6 +17,9 @@ LOCAL_SETTINGS:
 
 # Observations
 TCCON_MIP:
+  # NOTE: The TCCON MIP data is technically on pressure edges, but the parser
+  # interpolates all the data onto a common pressure center grid. So, we 
+  # specify "centers" here accordingly.
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'center'
   PARSER: 'read_TCCON_MIP'
   DATA_FIELDS:
