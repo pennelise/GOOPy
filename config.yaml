@@ -1,4 +1,6 @@
-# Change these before your run the script.
+# See config_template.yaml for a description of the fields in this file
+
+# Local settings 
 LOCAL_SETTINGS:
   REPROCESS: 'True'
   SAVE_SATELLITE_DATA: 'True'
@@ -14,12 +16,30 @@ LOCAL_SETTINGS:
   FILE_LENGTH_THRESHOLD: 1.0e+6
 
 # Observations
+TCCON_MIP:
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'center'
+  PARSER: 'read_TCCON_MIP'
+  DATA_FIELDS:
+    N_OBS: 'n_obs_instr'
+    N_EDGES: 'n_lev'
+    N_CENTERS: 'none'
+    PRESSURE_EDGES: 'p_levels_ak'
+    PRESSURE_WEIGHT: 'none'
+    LATITUDE: 'latitude'
+    LONGITUDE: 'longitude'
+    TIME: 'cdate'
+    AVERAGING_KERNEL: 'avg_kernel'
+    PRIOR_PROFILE: 'prior_mixing' # This is already dry
+    SATELLITE_COLUMN: 'column_mixing'
+    QUALITY_FLAG: 'none'
+
 OCO2_v11.1_preprocessed:
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
   PARSER: 'read_OCO2_v11_1_preprocessed'
   DATA_FIELDS:
     N_OBS: 'sounding_id'
     N_EDGES: 'levels'
+    N_CENTERS: 'none'
     PRESSURE_EDGES: 'pressure_levels'
     PRESSURE_WEIGHT: 'pressure_weight'
     LATITUDE: 'latitude'
@@ -34,32 +54,17 @@ TROPOMI:
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
   PARSER: 'read_TROPOMI'
   DATA_FIELDS: 
-    N_OBS: 'nobs'
+    N_OBS: 'none'
     N_EDGES: 'none'
+    N_CENTERS: 'layer'
     PRESSURE_EDGES: 'none' 
-    PRESSURE_WEIGHT: 'dry_air_subcolumns'
-    LATITUDE: 'latitude_center'
-    LONGITUDE: 'longitude_center'
-    TIME: 'time'
-    AVERAGING_KERNEL: 'xch4_column_averaging_kernel'
-    PRIOR_PROFILE: 'ch4_profile_apriori'
-    SATELLITE_COLUMN: 'xch4'
-    QUALITY_FLAG: 'none'
-
-TROPOMI_blended: 
-  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
-  PARSER: 'read_TROPOMI_blended'
-  DATA_FIELDS: 
-    N_OBS: 'nobs'
-    N_EDGES: 'none'        # These variables do not exist and are  
-    PRESSURE_EDGES: 'none' # created in the parser
-    PRESSURE_WEIGHT: 'dry_air_subcolumns'
+    PRESSURE_WEIGHT: 'none'
     LATITUDE: 'latitude'
     LONGITUDE: 'longitude'
     TIME: 'time_utc'
     AVERAGING_KERNEL: 'column_averaging_kernel'
     PRIOR_PROFILE: 'methane_profile_apriori'
-    SATELLITE_COLUMN: 'methane_mixing_ratio_blended'
+    SATELLITE_COLUMN: 'methane_mixing_ratio_bias_corrected'
     QUALITY_FLAG: 'qa_value'
 
 GOSATv9_0:
@@ -68,6 +73,7 @@ GOSATv9_0:
   DATA_FIELDS:
     N_OBS: 'n'
     N_EDGES: 'm'
+    N_CENTERS: 'none'
     PRESSURE_EDGES: 'pressure_levels'
     PRESSURE_WEIGHT: 'pressure_weight'
     LATITUDE: 'latitude'
@@ -81,8 +87,8 @@ GOSATv9_0:
 # Model
 MODEL:
   DATA_FIELDS:
-    PRESSURE_EDGES: 'Met_PEDGE' # Not PEDGEDRY?
-    CONC_AT_PRESSURE_CENTERS: 'SpeciesConcVV_.*' # todo: CO2 vs CH4. 
+    PRESSURE_EDGES: 'Met_PEDGE'
+    CONC_AT_PRESSURE_CENTERS: 'SpeciesConcVV_.*'
     LATITUDE: 'lat'
     LONGITUDE: 'lon'
     TIME: 'time'
