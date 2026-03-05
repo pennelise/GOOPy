@@ -122,7 +122,8 @@ def colocate_obs(model, satellite, save_dir=None):
         idx = xr.Dataset({"lat" : lat_idx, "lon" : lon_idx, "time" : time_idx})
         
         # Save out
-        idx.to_netcdf(f"{save_dir}_idx.nc")
+        if save_dir is not None:
+            idx.to_netcdf(f"{save_dir}_idx.nc")
 
     # Subset the data
     model = model.isel(TIME=idx['time'], 
