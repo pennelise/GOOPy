@@ -29,7 +29,7 @@ TCCON_MIP:
     LONGITUDE: 'longitude'
     TIME: 'cdate'
     AVERAGING_KERNEL: 'avg_kernel'
-    PRIOR_PROFILE: 'prior_mixing' # This is already dry
+    PRIOR_PROFILE: 'prior_mixing'
     SATELLITE_COLUMN: 'column_mixing'
     QUALITY_FLAG: 'none'
 
