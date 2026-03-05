@@ -1,23 +1,45 @@
-# Change these before your run the script.
+# See config_template.yaml for a description of the fields in this file
+
+# Local settings 
 LOCAL_SETTINGS:
   REPROCESS: 'True'
   SAVE_SATELLITE_DATA: 'True'
-  SATELLITE_NAME: 'OCO2_v11.1_preprocessed'
-  OBS_DIR: '/nobackupp27/hnesser/CO2_inversion/observations/OCO-2'
-  OBS_FILE_FORMAT: 'oco2_20141*.nc'
-  MODEL_DIR: '/nobackupp27/hnesser/CO2_inversion/validation_dirs/gc_4x5_47L_merra2_CO2/OutputDir'
+  SAVE_INTERPOLATION: 'True'
+  SATELLITE_NAME: satellitesatellite
+  OBS_DIR: obsdirobsdir
+  OBS_FILE_FORMAT: filefile
+  MODEL_LEVEL_EDGE_DIR: priordirpriordir
   LEVEL_EDGE_FILE_FORMAT: 'GEOSChem.LevelEdgeDiags.*.nc4' 
+  MODEL_CONCENTRATION_DIR: moddirmoddir
   CONCENTRATION_FILE_FORMAT: 'GEOSChem.SpeciesConc.*.nc4' 
-  SAVE_DIR: '/nobackupp27/hnesser/CO2_inversion/validation_dirs/gc_4x5_47L_merra2_CO2/ProcessedDir'
+  SAVE_DIR: savedirsavedir
   FILE_LENGTH_THRESHOLD: 1.0e+6
 
 # Observations
+TCCON_MIP:
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'center'
+  PARSER: 'read_TCCON_MIP'
+  DATA_FIELDS:
+    N_OBS: 'n_obs_instr'
+    N_EDGES: 'n_lev'
+    N_CENTERS: 'none'
+    PRESSURE_EDGES: 'p_levels_ak'
+    PRESSURE_WEIGHT: 'none'
+    LATITUDE: 'latitude'
+    LONGITUDE: 'longitude'
+    TIME: 'cdate'
+    AVERAGING_KERNEL: 'avg_kernel'
+    PRIOR_PROFILE: 'prior_mixing'
+    SATELLITE_COLUMN: 'column_mixing'
+    QUALITY_FLAG: 'none'
+
 OCO2_v11.1_preprocessed:
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
   PARSER: 'read_OCO2_v11_1_preprocessed'
   DATA_FIELDS:
     N_OBS: 'sounding_id'
     N_EDGES: 'levels'
+    N_CENTERS: 'none'
     PRESSURE_EDGES: 'pressure_levels'
     PRESSURE_WEIGHT: 'pressure_weight'
     LATITUDE: 'latitude'
@@ -25,29 +47,25 @@ OCO2_v11.1_preprocessed:
     TIME: 'time'
     AVERAGING_KERNEL: 'xco2_averaging_kernel'
     PRIOR_PROFILE: 'co2_profile_apriori'
-    SATELLITE_COLUMN: 'xco2'
+    SATELLITE_COLUMN: 'xco2_x2019'
     QUALITY_FLAG: 'none'
 
-TROPOMIvXX: # version is specified for each instrument
+TROPOMI: 
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
-  PARSER: 'read_TROPOMIvXX'
+  PARSER: 'read_TROPOMI'
   DATA_FIELDS: 
-    N_OBS: 'nobs'
-    N_EDGES: 'nlevels'
-    PRESSURE_EDGES: 'pressure_edges' # This variable does not
-    # exist in the TROPOMI files and needs to be created in the
-    # parser.
-    # N_CENTERS: 'nlayers'
-    # SURFACE_PRESSURE: 'surface_pressure'
-    # DELTA_PRESSURE: 'dp' 
-    PRESSURE_WEIGHT: 'dry_air_subcolumns'
-    LATITUDE: 'latitude_center'
-    LONGITUDE: 'longitude_center'
-    TIME: 'time'
-    AVERAGING_KERNEL: 'xch4_column_averaging_kernel'
-    PRIOR_PROFILE: 'ch4_profile_apriori'
-    SATELLITE_COLUMN: 'xch4'
-    QUALITY_FLAG: 'none'
+    N_OBS: 'none'
+    N_EDGES: 'none'
+    N_CENTERS: 'layer'
+    PRESSURE_EDGES: 'none' 
+    PRESSURE_WEIGHT: 'none'
+    LATITUDE: 'latitude'
+    LONGITUDE: 'longitude'
+    TIME: 'time_utc'
+    AVERAGING_KERNEL: 'column_averaging_kernel'
+    PRIOR_PROFILE: 'methane_profile_apriori'
+    SATELLITE_COLUMN: 'methane_mixing_ratio_bias_corrected'
+    QUALITY_FLAG: 'qa_value'
 
 GOSATv9_0:
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
@@ -55,6 +73,7 @@ GOSATv9_0:
   DATA_FIELDS:
     N_OBS: 'n'
     N_EDGES: 'm'
+    N_CENTERS: 'none'
     PRESSURE_EDGES: 'pressure_levels'
     PRESSURE_WEIGHT: 'pressure_weight'
     LATITUDE: 'latitude'
@@ -68,8 +87,8 @@ GOSATv9_0:
 # Model
 MODEL:
   DATA_FIELDS:
-    PRESSURE_EDGES: 'Met_PEDGE' # Not PEDGEDRY?
-    CONC_AT_PRESSURE_CENTERS: 'SpeciesConcVV_CO2' # todo: CO2 vs CH4. 
+    PRESSURE_EDGES: 'Met_PEDGE'
+    CONC_AT_PRESSURE_CENTERS: 'SpeciesConcVV_.*'
     LATITUDE: 'lat'
     LONGITUDE: 'lon'
     TIME: 'time'

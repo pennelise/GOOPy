@@ -1,21 +1,136 @@
-# Generic config format for a satellite that specifies the 
-# vertical grid using pressure edges.
-SATELLITE_USING_PRESSURE_EDGES:
+# This file provides a detailed description of the variables in the config 
+# file.  The config file is arranged into three main sections:
+# 1. LOCAL_SETTINGS: This contains general settings related to GOOPy as well
+#                    as file paths and naming conventions for the satellite 
+#                    and model data.
+# 2. Observations: Each observation block corresponds to a specific satellite 
+#                  or ground-based column-observing instrument (e.g., TCCON).
+#                  These blocks provide information on the structure of the
+#                  satellite data files and generally do not need to be modified 
+#                  once they've been created.
+# 3. MODEL: This block describes the structure of the GEOS-Chem output files. 
+#           As with the Observation blocks, this generally does not need to be
+#           modified once created.       
+
+# Note: All file paths can be specified as absolute or relative to the 
+# directory where GOOPy is being run [TODO: confirm this behavior].
+
+LOCAL_SETTINGS: 
   REPROCESS: 'True' or 'False'
+  # Default: 'True'
+  # Reprocess determines whether or not to re-process satellite files for which
+  # a processed file with the observation operator applied already exists in 
+  # the save directory.
+
   SAVE_SATELLITE_DATA: 'True' or 'False'
+  # Default: 'True'
+  # This flag controls whether or not to save  original satellite data, 
+  # including any supplemental variables (e.g., blended albedo). If 'False',
+  # only the model columns get saved out, which is particularly useful for
+  # Jacobian simulations. TODO: Check the behavior of False to confirm this.
+
+  SAVE_INTERPOLATION: 'True' or 'False'
+  # Default: 'False'
+  # This flag controls whether to save out arrays that map from the model grid
+  # to the satellite grid in the lat, lon, time, and pressure dimensions. These
+  # are saved in a <OBS_DIR>/operator_components. This will primarily be set
+  # to 'True' for Jacobian simulations.
+
+  SATELLITE_NAME: <Name of satellite>
+  # This is the name of the satellite, which should correspond to the the name
+  # used lower in the config file under the observation block.
+
+  OBS_DIR: <path/to/satellite/data/directory>
+  # Path to the satellite (or TCCON) observations.
+
+  OBS_FILE_FORMAT: <String pattern for satellite data files, e.g. 'file_*.nc4'>
+  # This is the string pattern used to identify satellite data files within 
+  # OBS_DIR. It should be capable of regex since it is used within glob. 
+
+  MODEL_LEVEL_EDGE_DIR: <path/to/model/level/edge/directory>
+  # Path to the directory containing GEOS-Chem LevelEdgeDiags output files. This
+  # is specfied separately from the MODEL_CONCENTRATION_DIR (below) to support
+  # Jacobian simulations (where the LevelEdgeDiag files are typically generated
+  # only once in the prior simulation).
+
+  LEVEL_EDGE_FILE_FORMAT: <String pattern, e.g. 'GEOSChem.LevelEdgeDiags.*.nc4'>
+  # String pattern used to identify LevelEdgeDiags files within 
+  # MODEL_LEVEL_EDGE_DIR. It should be capable of regex.
+
+  MODEL_CONCENTRATION_DIR: <path/to/model/concentration/directory>
+  # Path to the directory containing GEOS-Chem SpeciesConc output files.
+
+  CONCENTRATION_FILE_FORMAT: <String pattern, e.g. 'GEOSChem.SpeciesConc.*.nc4'>
+  # String pattern used to identify SpeciesConc files within 
+  # MODEL_CONCENTRATION_DIR. It should be capable of regex.
+
+  SAVE_DIR: <path/to/output/directory>
+  # Directory where processed output files will be saved. Can be absolute or
+  # relative.
+
+  FILE_LENGTH_THRESHOLD: <numeric value, e.g. 1.0e+6>
+  # The number of individual observations to process at a time. This can be 
+  # changed to reflect the available memory
+
+# Observations
+<SATELLITE_NAME>: 
+# Each observation type has its own block. The name of the block should 
+# correspond to the name specified in LOCAL_SETTINGS for SATELLITE_NAME.
+# Each block contains the following values:
+
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers' or 'edges'
-  OBS_DIR: 'location_of_data'
-  FILE_NAME_FORMAT: 'file_name_format*.nc'
-  PARSER: 'parser_name_in_parsers.py'
+  # Whether the averaging kernel (and prior_profile and satellite_column) are 
+  #defined on pressure layer centers or edges.
+
+  PARSER: <function name>
+  # The name of the function within parsers.py used to read each file for the 
+  # instrument to generate an xarray dataset that has any of the relevant 
+  # coordinates and all of the variables within DATA_FIELDS (below). A generic 
+  # parser is available if there is a one-to-one mapping between the 
+  # DATA_FIELDS and the satellite variables. However, users should still be 
+  # careful to ensure that any pressure units are hPa. 
+
   DATA_FIELDS:
-    N_OBS: 'observation_dimension_name'
-    N_EDGES: 'vertical_level_edges_dimension_name'  # What is the difference between
-    PRESSURE_EDGES: 'variable_name' # these two fields?
-    PRESSURE_WEIGHT: 'variable_name'
-    LATITUDE: 'variable_name'
-    LONGITUDE: 'variable_name'
-    TIME: 'variable_name'
-    AVERAGING_KERNEL: 'variable_name'
-    PRIOR_PROFILE: 'variable_name'
-    SATELLITE_COLUMN: 'variable_name'
-    QUALITY_FLAG: 'optional_variable_name_or_none'
+  # A mapping from generic internal field names to the actual variable names
+  # in the instrument's data files. Use 'none' if a field is not present or
+  # needs to be generated by the parser.
+
+    # Coordinates:
+    N_OBS:            <String for the observation dimension>
+    N_EDGES:          <String for the pressure edge level dimension>
+    N_CENTERS:        <String for the pressure center levels dimension>
+    # N_CENTERS is only defined as something other than 'none' if 
+    # AVERAGING_KERNEL_USES_CENTERS_OR_EDGES is 'center'.
+
+    # Variables
+    PRESSURE_EDGES:   <String for the pressure edge values>
+    PRESSURE_WEIGHT:  <String for pressure weights used to add together the
+                       sub-column concentrations>
+    LATITUDE:         <String for the latitude variable>
+    LONGITUDE:        <String for the longitude variable>
+    TIME:             <String for the time variable, which should have a 
+                       np.datetime64 format [TODO: confirm]>
+    AVERAGING_KERNEL: <String for the column averaging kernel>
+    PRIOR_PROFILE:    <String for the prior (a priori) vertical profile, which
+                       should have units of hPa>
+    SATELLITE_COLUMN: <String for the satellite or instrument measured 
+                       concentration>
+    QUALITY_FLAG:     <Optional string used to filter low-quality retrievals. 
+                       [TODO: No filtering is currently implemented]>
+
+MODEL:
+  DATA_FIELDS:
+    PRESSURE_EDGES: 'Met_PEDGE'
+    # Variable containing model pressure edge values (in hPa), from the
+    # LevelEdgeDiags output.
+
+    CONC_AT_PRESSURE_CENTERS: 'SpeciesConcVV_.*'
+    # Regex pattern matching the species concentration variable(s) in the
+    # SpeciesConc output. The .* allows matching any species name for Jacobian
+    # simulations that use multiple tracers.
+
+    LATITUDE: 'lat'
+    LONGITUDE: 'lon'
+    TIME: 'time'
+    LEV: 'lev'
+    ILEV: 'ilev'

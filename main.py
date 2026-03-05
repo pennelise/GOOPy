@@ -29,22 +29,26 @@ def apply_operator_to_chunks(model_conc_files,
     i = 0
     model_columns = []
     satellite_columns = []
-    while i < satellite.dims["N_OBS"]:
-
+    while i < satellite.sizes["N_OBS"]:
+        # Subset the satellite data
         sat_i = satellite.isel(
             N_OBS=slice(
                 int(i), 
                 int(i + config["LOCAL_SETTINGS"]["FILE_LENGTH_THRESHOLD"])
             )
         )
-    
+
+        # Get the dates that need to be processed
         process_dates = np.unique(sat_i["TIME"].dt.strftime("%Y-%m-%d"))
 
         mod_i = parsers.read_geoschem_file(
             util.get_gc_files_for_dates(model_conc_files, process_dates),
             util.get_gc_files_for_dates(model_edge_files, process_dates),
             config["MODEL"]["DATA_FIELDS"])
+        mod_i = mod_i.compute()
 
+        # Check for times that are missing in the satellite data and continue
+        # if there are no overlapping times.
         missing_times = util.get_missing_times(sat_i["TIME"], mod_i["TIME"])
         if (~missing_times).sum() == 0:
             print("  There are no overlapping satellite and model data in"
@@ -53,21 +57,32 @@ def apply_operator_to_chunks(model_conc_files,
             continue
 
         # Run the column operator
+        save_dir = (
+            f'{config["LOCAL_SETTINGS"]["OBS_DIR"]}/operator_components/'
+            f'{process_dates.min()}_{process_dates.max()}_{int(i):04d}'
+        )
         model_columns.append(
             operators.get_model_columns(
-                mod_i, sat_i.where(~missing_times, drop=True), 
-                config["LOCAL_SETTINGS"]["SATELLITE_NAME"]))
+                mod_i, sat_i.where(~missing_times, drop=True), config, save_dir
+            )
+        )
         if config["LOCAL_SETTINGS"]["SAVE_SATELLITE_DATA"].lower() == "true":
+            drop_vars = ["PRESSURE_EDGES", "PRESSURE_WEIGHT",
+                         "AVERAGING_KERNEL", "PRIOR_PROFILE",
+                         "N_EDGES", "N_LAYERS"]
+            drop_vars = [v for v in drop_vars if v in sat_i.data_vars]
             satellite_columns.append(
-                sat_i.drop(['PRESSURE_EDGES', 'PRESSURE_WEIGHT',
-                            'AVERAGING_KERNEL', 'PRIOR_PROFILE', 'N_EDGES']))
+                sat_i.drop_vars(drop_vars)
+            )
 
         i += config["LOCAL_SETTINGS"]["FILE_LENGTH_THRESHOLD"]
 
     # Concatenate together, combine, and return
     if len(model_columns) > 0:
         model_columns = xr.concat(model_columns, dim="N_OBS")
-        model_columns = model_columns.rename("MODEL_COLUMN")
+        rename = {v : v.replace('CONC_AT_PRESSURE_CENTERS', 'MODEL_COLUMN')
+                  for v in model_columns.data_vars}
+        model_columns = model_columns.rename(rename)
         if config["LOCAL_SETTINGS"]["SAVE_SATELLITE_DATA"].lower() == "true":
             satellite_columns = xr.concat(satellite_columns, dim="N_OBS")
             model_columns = xr.merge([model_columns, satellite_columns])
@@ -93,6 +108,14 @@ def apply_operator(config):
     if not os.path.exists(config["LOCAL_SETTINGS"]["SAVE_DIR"]):
         os.makedirs(config["LOCAL_SETTINGS"]["SAVE_DIR"])
 
+    # Also make a directory to save out the components of the operator (e.g.,
+    # space and time indices and the interpolation map) if needed.
+    if config["LOCAL_SETTINGS"]["SAVE_INTERPOLATION"]:
+        save_dir = f'{config["LOCAL_SETTINGS"]["OBS_DIR"]}/operator_components'
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+    # Obtain a list of the satellite and GEOS-Chem files.
     files = util.get_file_lists(config["LOCAL_SETTINGS"])
     satellite_files, model_edge_files, model_conc_files = files
 
@@ -103,7 +126,8 @@ def apply_operator(config):
         [date for date in util.get_gc_dates(model_edge_files)
          if date in util.get_gc_dates(model_conc_files)])
 
-    read_satellite = util.get_satellite_parser(config)
+    # Get the satellite parser. 
+    read_satellite = parsers.get_satellite_parser(config)
 
     for sf in satellite_files:
         short_name = sf.split("/")[-1]
@@ -125,6 +149,7 @@ def apply_operator(config):
         satellite = satellite.where(
             satellite["TIME"].dt.strftime("%Y-%m-%d").isin(satellite_dates), 
             drop=True)
+        satellite = satellite.compute()
 
         model_columns = apply_operator_to_chunks(
             model_conc_files, model_edge_files, satellite, config)

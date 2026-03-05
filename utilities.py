@@ -1,8 +1,7 @@
+import os
 import glob
-import inspect
 import numpy as np
 import xarray as xr
-import parsers
 
 def get_file_lists(local_config):
     '''
@@ -13,29 +12,30 @@ def get_file_lists(local_config):
     sat_files = f"{local_config['OBS_DIR']}/{local_config['OBS_FILE_FORMAT']}"
     sat_files = np.array(sorted(glob.glob(sat_files)))    
 
-    model_edge_files = (f"{local_config['MODEL_DIR']}/"
+
+    model_edge_files = (f"{local_config['MODEL_LEVEL_EDGE_DIR']}/"
                      f"{local_config['LEVEL_EDGE_FILE_FORMAT']}")
     model_edge_files = np.array(sorted(glob.glob(model_edge_files)))
 
-    model_conc_files = (f"{local_config['MODEL_DIR']}/"
+    model_conc_files = (f"{local_config['MODEL_CONCENTRATION_DIR']}/"
                         f"{local_config['CONCENTRATION_FILE_FORMAT']}")
     model_conc_files = np.array(sorted(glob.glob(model_conc_files)))
 
     # Require that all of these lists contain files.
     if len(sat_files) == 0:
         print(f"Satellite directory: "
-              f"{local_config['OBS_DIR']}/{local_config['FILE_NAME_FORMAT']}")
+              f"{local_config['OBS_DIR']}/{local_config['OBS_FILE_FORMAT']}")
         raise ValueError("Satellite files are empty.")
     
     if len(model_edge_files) == 0:
         print(f"Model edge directory: "
-              f"{local_config['MODEL_DIR']}/"
+              f"{local_config['MODEL_LEVEL_EDGE_DIR']}/"
               f"{local_config['LEVEL_EDGE_FILE_FORMAT']}")
         raise ValueError("Model edge files are empty.")
     
     if len(model_conc_files) == 0:
         print(f"Model concentration directory: "
-              f"{local_config['MODEL_DIR']}/"
+              f"{local_config['MODEL_CONCENTRATION_DIR']}/"
               f"{local_config['CONCENTRATION_FILE_FORMAT']}")
         raise ValueError("Model concentration files are empty.")
     
@@ -73,25 +73,6 @@ def get_gc_files_for_dates(file_names, dates):
     return file_names[np.in1d(get_gc_dates(file_names), dates)]
 
 
-def get_satellite_parser(config):
-    # Get the function that opens the satellite data. Check that the function
-    # has a default value for satellite_name. If not, use satellite_name
-    satellite_name = config["LOCAL_SETTINGS"]["SATELLITE_NAME"]
-    read_sat = getattr(parsers, config[satellite_name]["PARSER"])
-    name_param = inspect.signature(read_sat).parameters["data_fields"]
-    if name_param.default is not name_param.empty:
-        satellite_name = name_param.default
-    print(f"satellite_name : {satellite_name}")
-    print(f"parser : {config[satellite_name]['PARSER']}")
-
-    # Define the function
-    def read_satellite(file_path):
-        dataset = read_sat(file_path, config[satellite_name]["DATA_FIELDS"])
-        dataset = parsers.check_satellite_data(dataset)
-        return dataset
-    
-    return read_satellite
-
 def get_missing_times(satellite_times, model_times):
     satellite_times = satellite_times.dt.strftime("%Y-%m-%d.%H")
     missing_times = xr.DataArray(
@@ -104,7 +85,7 @@ def get_missing_times(satellite_times, model_times):
     return missing_times
 
 
-def colocate_obs(model, satellite):
+def colocate_obs(model, satellite, save_dir=None):
     """
     directly from Hannah's code
     get gridcells which are coincident with each satellite observation
@@ -112,26 +93,40 @@ def colocate_obs(model, satellite):
     fast implementation, credit Nick
     TO DO : This could be sped up using Nick's implementation, but that
     requires knowledge of the latitude and longitude delta
-    """    
-    # Now get indices, beginning with time
-    time_idx = np.where(satellite["TIME"].dt.strftime("%Y-%m-%d.%H") 
-                        == model["TIME"].dt.strftime("%Y-%m-%d.%H"))
-    if len(time_idx) == 2:
-        time_idx = time_idx[1]
-    elif len(time_idx) == 1:
-        time_idx = time_idx[0]
-    else:
-        raise ValueError('Time index is not recognized.')
-    time_idx = xr.DataArray(time_idx, dims="N_OBS")
+    """
+    # We need to get indices in time and space (lat/lon). We begin by trying to
+    # load these indices, because for Jacobian simulations, it can save time.
+    # If this fails, we will calculate them.
+    try:
+        idx = xr.open_dataset(f'{save_dir}_idx.nc')
+        print("  Using pre-computed time and space indices.")
+    except:
+        print("  Computing time and space indices.")
+        # Now get indices, beginning with time
+        time_idx = np.where(satellite["TIME"].dt.strftime("%Y-%m-%d.%H") 
+                            == model["TIME"].dt.strftime("%Y-%m-%d.%H"))
+        if len(time_idx) == 2:
+            time_idx = time_idx[1]
+        elif len(time_idx) == 1:
+            time_idx = time_idx[0]
+        else:
+            raise ValueError('Time index is not recognized.')
+        time_idx = xr.DataArray(time_idx, dims="N_OBS")
 
-    # Longitude and latitude index
-    lon_idx = get_closest_index(model["LONGITUDE"].values, 
-                                satellite["LONGITUDE"].values)
-    lat_idx = get_closest_index(model["LATITUDE"].values, 
-                                satellite["LATITUDE"].values)
+        # Longitude and latitude index
+        lon_idx = get_closest_index(model["LONGITUDE"].values, 
+                                    satellite["LONGITUDE"].values)
+        lat_idx = get_closest_index(model["LATITUDE"].values, 
+                                    satellite["LATITUDE"].values)
+        
+        idx = xr.Dataset({"lat" : lat_idx, "lon" : lon_idx, "time" : time_idx})
+        
+        # Save out
+        idx.to_netcdf(f"{save_dir}_idx.nc")
 
     # Subset the data
-    model = model.isel(TIME=time_idx, LONGITUDE=lon_idx, LATITUDE=lat_idx)
+    model = model.isel(TIME=idx['time'], 
+                       LONGITUDE=idx['lon'], LATITUDE=idx['lat'])
 
     return model
 
