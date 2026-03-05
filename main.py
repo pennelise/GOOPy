@@ -43,7 +43,7 @@ def apply_operator_to_chunks(model_conc_files,
         mod_i = mod_i.compute()
 
         # Check for times that are missing in the satellite data and continue
-        # if there are no overlapping itmes
+        # if there are no overlapping times.
         missing_times = util.get_missing_times(sat_i["TIME"], mod_i["TIME"])
         if (~missing_times).sum() == 0:
             print("  There are no overlapping satellite and model data in"
@@ -52,22 +52,23 @@ def apply_operator_to_chunks(model_conc_files,
             continue
 
         # Run the column operator
-        satellite_name = config["LOCAL_SETTINGS"]["SATELLITE_NAME"]
+        save_dir = (
+            f'{config["LOCAL_SETTINGS"]["OBS_DIR"]}/operator_components/'
+            f'{process_dates.min()}_{process_dates.max()}_{int(i):04d}'
+        )
         model_columns.append(
             operators.get_model_columns(
-                mod_i, sat_i.where(~missing_times, drop=True),
-                config[satellite_name]["AVERAGING_KERNEL_USES_CENTERS_OR_EDGES"],
-                config["LOCAL_SETTINGS"]["SAVE_INTERPOLATION"],
-                f'{config["LOCAL_SETTINGS"]["OBS_DIR"]}/'
-                'operator_components/'
-                f'{process_dates.min()}_{process_dates.max()}_{int(i):04d}'
-                )
+                mod_i, sat_i.where(~missing_times, drop=True), config, save_dir
             )
+        )
         if config["LOCAL_SETTINGS"]["SAVE_SATELLITE_DATA"].lower() == "true":
+            drop_vars = ["PRESSURE_EDGES", "PRESSURE_WEIGHT",
+                         "AVERAGING_KERNEL", "PRIOR_PROFILE",
+                         "N_EDGES", "N_LAYERS"]
+            drop_vars = [v for v in drop_vars if v in sat_i.data_vars]
             satellite_columns.append(
-                sat_i.drop_vars(['PRESSURE_EDGES', 'PRESSURE_WEIGHT',
-                                 'AVERAGING_KERNEL', 'PRIOR_PROFILE',
-                                 'N_EDGES']))
+                sat_i.drop_vars(drop_vars)
+            )
 
         # Step up i
         i += config["LOCAL_SETTINGS"]["FILE_LENGTH_THRESHOLD"]
@@ -112,7 +113,7 @@ def apply_operator(config):#satellite_name, file_length_threshold=1e6):
          if date in util.get_gc_dates(model_conc_files)])
 
     # Get the satellite parser. 
-    read_satellite = util.get_satellite_parser(config)
+    read_satellite = parsers.get_satellite_parser(config)
 
     # Iterate through the satellite files:
     for sf in satellite_files:
