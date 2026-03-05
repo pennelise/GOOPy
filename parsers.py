@@ -157,7 +157,6 @@ def read_TCCON_MIP(file_path, data_fields):
     for name, var in tccon.data_vars.items():
         if ("N_EDGES" in var.dims) & ("N_OBS" in var.dims):
             # Truncate the dataset to only be above the TCCON surface
-            print(name)
             var = var.where(~pressure.isnull())
 
             # Shift so that the first level is first
@@ -217,6 +216,7 @@ def read_TCCON_MIP(file_path, data_fields):
         save_dir=None,
         expand_model_edges=False
     ).interpolate()
+
     tccon["AVERAGING_KERNEL"] = xr.DataArray(
         ak_on_new_grid[:, :, 0], 
         dims=["N_OBS", "N_CENTERS"],
