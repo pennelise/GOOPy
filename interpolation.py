@@ -27,7 +27,8 @@ class VerticalGrid:
         satellite_edges,
         interpolate_to_centers_or_edges,
         save_interpolation,
-        save_dir
+        save_dir,
+        expand_model_edges=True
     ):
         self.model_conc_at_layers = model_conc_at_layers
         self.model_edges = model_edges
@@ -35,6 +36,10 @@ class VerticalGrid:
         self.interpolate_to_centers_or_edges = interpolate_to_centers_or_edges
         self.save_interpolation = save_interpolation
         self.save_dir = save_dir
+        self.expand_model_edges = expand_model_edges 
+        # NOTE: This should always be True. We set it as a variable because
+        # we use this class to do some additional interpolation for the TCCON
+        # parser, and it requires some flexibility in this assumption
 
         self.__expand_profile_dims()
         self.__check_input_structure()
@@ -68,11 +73,15 @@ class VerticalGrid:
             self.satellite_edges.ndim == 2
         ), "Satellite pressure edges must be 2D (nobs x nlevels)."
 
+        # The less than or equal to allows for the TCCON processing where
+        # some observations have multiple pressure levels with 0 pressure
+        # at the top of the atmosphere (to fill in variability in the 
+        # number of active layers).
         assert np.all(
-            np.diff(self.model_edges) < 0
+            np.diff(self.model_edges) <= 0
         ), "GEOS-Chem pressure levels must be in descending order."
         assert np.all(
-            np.diff(self.satellite_edges) < 0
+            np.diff(self.satellite_edges) <= 0
         ), "Satellite pressure levels must be in descending order."
 
         assert (
@@ -97,8 +106,10 @@ class VerticalGrid:
         top is below the satellite top. We do this by adjusting the
         GEOS-Chem surface pressure up to the satellite surface pressure
         """
-        idx_bottom = np.less(self.model_edges[:, 0], self.satellite_edges[:, 0])
-        idx_top = np.greater(self.model_edges[:, -1], self.satellite_edges[:, -1])
+        idx_bottom = np.less(self.model_edges[:, 0], 
+                             self.satellite_edges[:, 0])
+        idx_top = np.greater(self.model_edges[:, -1], 
+                             self.satellite_edges[:, -1])
 
         expanded_model_edges = self.model_edges.copy()
         expanded_model_edges[idx_bottom, 0] = self.satellite_edges[idx_bottom, 0]
@@ -114,7 +125,6 @@ class VerticalGrid:
         interpolation_map is equivalent to W * M_in in Keppens et al. (2019) eq. 14,
         and has dimension (nobs x ngc x nsat)
         """
-
         # Define matrices with "low" and "high" pressure values for each layer.
         # shape: nobs x n_model_levels - 1 x n_satellite_levels - 1
         model_low = model_edges[:, 1:][:, :, None]
@@ -123,9 +133,8 @@ class VerticalGrid:
         satellite_low = satellite_edges[:, 1:][:, None, :]
         satellite_high = satellite_edges[:, :-1][:, None, :]
 
-        interpolation_map = np.minimum(satellite_high, model_high) - np.maximum(
-            satellite_low, model_low
-        )
+        interpolation_map = (np.minimum(satellite_high, model_high) - 
+                             np.maximum(satellite_low, model_low))
         layers_do_not_intersect = ~(
             np.less_equal(satellite_low, model_high)
             & np.greater_equal(satellite_high, model_low)
@@ -157,7 +166,10 @@ class VerticalGrid:
         a pre-calculating interpolation_map if available--this is to optimize 
         Jacobian construction.
         """
-        expanded_model_edges = self.expand_model_to_satellite_range()
+        if self.expand_model_edges:
+            expanded_model_edges = self.expand_model_to_satellite_range()
+        else:
+            expanded_model_edges = self.model_edges
 
         if self.interpolate_to_centers_or_edges == "edges":
             hprime_satellite_edges = self.get_hprime_satellite_edges()
