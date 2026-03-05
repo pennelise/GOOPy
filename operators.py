@@ -29,7 +29,10 @@ def get_model_columns(model, satellite, config, save_dir):
 
     # Get the spatial and temporal indices linking each satellite observation
     # back to the model grid and apply them to the model data
-    model = util.colocate_obs(model, satellite, save_dir)
+    if save_interpolation:
+        model = util.colocate_obs(model, satellite, save_dir)
+    else:
+        model = util.colocate_obs(model, satellite)
 
     # Create an instance of the VerticalGrid class and interpolate the model
     # onto satellite levels
