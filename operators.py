@@ -20,14 +20,19 @@ def apply_averaging_kernel(model_on_satellite_levels, satellite):
     return  model_column
 
 
-def get_model_columns(model, satellite, avker_center_or_edges,
-                      save_interpolation, save_dir):
+def get_model_columns(model, satellite, config, save_dir):
     """
     generic function to apply an operator to a satellite
     takes:
         - GEOS-Chem dataframe (not a problem b/c this is standard)
         - all required satellite inputs as np arrays
     """
+    satellite_name = config["LOCAL_SETTINGS"]["SATELLITE_NAME"]
+    avker_center_or_edges = config[satellite_name][
+        "AVERAGING_KERNEL_USES_CENTERS_OR_EDGES"
+    ]
+    save_interpolation = config["LOCAL_SETTINGS"]["SAVE_INTERPOLATION"]
+
     # Get the spatial and temporal indices linking each satellite observation
     # back to the model grid and apply them to the model data
     model = util.colocate_obs(model, satellite, save_dir)
