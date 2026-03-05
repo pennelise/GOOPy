@@ -1,10 +1,4 @@
 import os
-
-os.environ['OPENBLAS_NUM_THREADS'] = '8'
-os.environ['MPI_NUM_THREADS'] = '8'
-os.environ['MKL_NUM_THREADS'] = '8'
-os.environ['OMP_NUM_THREADS'] = '8'
-
 import numpy as np
 
 class VerticalGrid:
