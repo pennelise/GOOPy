@@ -86,6 +86,7 @@ def read_satellite_file(file_path, data_fields):
     # Return the data
     return satellite
 
+
 def read_TCCON_MIP(file_path, data_fields):
     tccon = xr.open_dataset(file_path, group="CO2")
 
@@ -225,6 +226,7 @@ def read_TCCON_MIP(file_path, data_fields):
     tccon = tccon.drop_vars(["p_levels_prior", "p_levels_ak"])
 
     return tccon
+
 
 def shift_tccon_pressure_grid(row, fill_zero=True):
     # Count leading NaNs in reference
@@ -400,19 +402,3 @@ def get_satellite_parser(config):
         return dataset
     
     return read_satellite
-
-
-# def reverse_center_edge_vars(ds: xr.Dataset) -> xr.Dataset:
-#     """
-#     Reverse (flip) all variables that have an N_CENTERS or N_EDGES dimension.
-#     Coordinate values along those dimensions are also reversed if present.
-#     """
-#     dims_to_flip = {"N_CENTERS", "N_EDGES"}
-    
-#     # Identify which flip dims actually exist in this dataset
-#     active_flip_dims = dims_to_flip & set(ds.dims)
-    
-#     if not active_flip_dims:
-#         return ds  # Nothing to do
-    
-#     return ds.isel({dim: slice(None, None, -1) for dim in active_flip_dims})
