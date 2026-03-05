@@ -55,6 +55,7 @@ def apply_operator_to_chunks(model_conc_files,
                   " this chunk.")
             i += config["LOCAL_SETTINGS"]["FILE_LENGTH_THRESHOLD"]
             continue
+        sat_i = sat_i.where(~missing_times, drop=True)
 
         # Run the column operator
         save_dir = (
@@ -62,18 +63,14 @@ def apply_operator_to_chunks(model_conc_files,
             f'{process_dates.min()}_{process_dates.max()}_{int(i):04d}'
         )
         model_columns.append(
-            operators.get_model_columns(
-                mod_i, sat_i.where(~missing_times, drop=True), config, save_dir
-            )
+            operators.get_model_columns(mod_i, sat_i, config, save_dir)
         )
         if config["LOCAL_SETTINGS"]["SAVE_SATELLITE_DATA"].lower() == "true":
             drop_vars = ["PRESSURE_EDGES", "PRESSURE_WEIGHT",
                          "AVERAGING_KERNEL", "PRIOR_PROFILE",
                          "N_EDGES", "N_LAYERS"]
             drop_vars = [v for v in drop_vars if v in sat_i.data_vars]
-            satellite_columns.append(
-                sat_i.drop_vars(drop_vars)
-            )
+            satellite_columns.append(sat_i.drop_vars(drop_vars))
 
         i += config["LOCAL_SETTINGS"]["FILE_LENGTH_THRESHOLD"]
 
