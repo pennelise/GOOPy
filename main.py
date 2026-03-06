@@ -1,5 +1,19 @@
+# Initial environment set up
 import os
+import sys
 import yaml
+
+config_file = sys.argv[1] if len(sys.argv) > 1 else 'config.yaml'
+
+with open(config_file, 'r') as f:
+    config = yaml.safe_load(f)
+
+os.environ['OPENBLAS_NUM_THREADS'] = str(config['LOCAL_SETTINGS']['N_THREADS'])
+os.environ['MPI_NUM_THREADS'] = str(config['LOCAL_SETTINGS']['N_THREADS'])
+os.environ['MKL_NUM_THREADS'] = str(config['LOCAL_SETTINGS']['N_THREADS'])
+os.environ['OMP_NUM_THREADS'] = str(config['LOCAL_SETTINGS']['N_THREADS'])
+
+# Additional imports
 import numpy as np
 import xarray as xr
 import utilities as util
@@ -158,14 +172,5 @@ def apply_operator(config):
     
 
 if __name__ == "__main__":
-    # Import the name of the config file and the name of the satellite
-    # name
-    import sys
-    config_str = sys.argv[1]
-
-    # Load the config file
-    with open(config_str, "r", encoding="utf8") as f:
-        config = yaml.safe_load(f)
-
     # Run the operator
     apply_operator(config)

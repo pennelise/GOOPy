@@ -1,4 +1,3 @@
-import os
 import numpy as np
 import xarray as xr
 from interpolation import VerticalGrid

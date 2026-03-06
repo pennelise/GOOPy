@@ -72,6 +72,11 @@ LOCAL_SETTINGS:
   # The number of individual observations to process at a time. This can be 
   # changed to reflect the available memory
 
+  N_THREADS: <integer value, e.g. 8>
+  # The number of threads/CPUs available to the process. This should typically
+  # match the number of threads used to compile GEOS-Chem since often GOOPy
+  # is run within the run file, immediately after GEOS-Chem.
+
 # Observations
 <SATELLITE_NAME>: 
 # Each observation type has its own block. The name of the block should 

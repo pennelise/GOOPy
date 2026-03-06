@@ -1,4 +1,3 @@
-import os
 import glob
 import numpy as np
 import xarray as xr
