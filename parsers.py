@@ -99,6 +99,7 @@ def read_TCCON_MIP(file_path, data_fields):
                              "prior_mixing_tccon",
                              "public"])
 
+
     # Then, adjust the units of TCCON to match GEOS-Chem
     ## Pa to hPa
     for var in ["p_surf", "p_levels_prior", "p_levels_ak"]:
@@ -342,12 +343,6 @@ def read_TROPOMI(file_path, data_fields):
     return satellite
 
 
-def read_GOSAT_vXX(file_path, data_fields):
-    # read GOSAT file
-    # grab tropomic data columns specified in config and rename them to standard naming
-    pass
-
-
 def read_OCO2_v11_1_preprocessed(file_path, data_fields):
     # Use the standard parser first
     satellite = read_satellite_file(file_path, data_fields)
@@ -363,12 +358,43 @@ def read_OCO2_v11_1_preprocessed(file_path, data_fields):
     return satellite
 
 
+def read_OCO_10s(file_path, data_fields):
+    # Use the standard parser first
+    satellite = read_satellite_file(file_path, data_fields)
+
+    # There are 80 variables. We only select those that we actually need
+    keep_vars = [
+        "LATITUDE", "LONGITUDE", "TIME", "SATELLITE_COLUMN", "QUALITY_FLAG",
+        "PRIOR_PROFILE", "AVERAGING_KERNEL", "PRESSURE_WEIGHT",
+        "sigma_levels", "assimilate_flag","data_type", "psurf_apriori", 
+        "psurf", "xco2_apriori", "xco2_uncertainty", "model_error",
+        "land_fraction", "operation_mode", "surface_type", "dp", 
+    ]
+    satellite = satellite[keep_vars]
+    
+    # Calculate the pressure levels
+    satellite["PRESSURE_EDGES"] = satellite["sigma_levels"] * satellite["psurf"]
+    satellite = satellite.drop_vars(["sigma_levels"])
+
+    # Convert units from ppm to mol/mol
+    satellite["PRIOR_PROFILE"] *= 1e-6
+    satellite["SATELLITE_COLUMN"] *= 1e-6
+
+    satellite = satellite.compute()
+
+    return satellite
+
+
 def check_satellite_data(satellite):
     # TODO: assert type(sat["TIME"]) == datetime (need to deal with the fact
     # that dtype shows up as "<M8[ns]" or ">M8[ns]" depending on the endianess
     # ?? of the system)
+
+    # Ensure that the satellite data has the correct ordering of dimensions
+    satellite = satellite.transpose("N_OBS", ...)
+
     # Ensure that satellite pressure levels are in descending order:
-    if np.all(np.diff(satellite["PRESSURE_EDGES"]) >= 0):
+    if np.all(satellite["PRESSURE_EDGES"].diff(dim="N_EDGES") >= 0):
         print("  Switching direction of N_EDGES/N_CENTERS.")
         # Identify which flip dims actually exist in this dataset, then flip them
         dims_to_flip = {"N_CENTERS", "N_EDGES"}
@@ -376,9 +402,6 @@ def check_satellite_data(satellite):
         satellite = satellite.isel(
             {dim: slice(None, None, -1) for dim in active_flip_dims}
         )
-        
-    # Ensure that the satellite data has the correct ordering of dimensions
-    satellite = satellite.transpose("N_OBS", ...)
 
     return satellite
 
