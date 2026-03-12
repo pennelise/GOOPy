@@ -21,13 +21,13 @@ TCCON_MIP:
   # NOTE: The TCCON MIP data is technically on pressure edges, but the parser
   # interpolates all the data onto a common pressure center grid. So, we 
   # specify "centers" here accordingly.
-  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'center'
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
   PARSER: 'read_TCCON_MIP'
   DATA_FIELDS:
     N_OBS: 'n_obs_instr'
     N_EDGES: 'n_lev'
     N_CENTERS: 'none'
-    PRESSURE_EDGES: 'p_levels_ak'
+    PRESSURE_EDGES: 'none'
     PRESSURE_WEIGHT: 'none'
     LATITUDE: 'latitude'
     LONGITUDE: 'longitude'
@@ -53,6 +53,23 @@ OCO2_v11.1_preprocessed:
     PRIOR_PROFILE: 'co2_profile_apriori'
     SATELLITE_COLUMN: 'xco2_x2019'
     QUALITY_FLAG: 'none'
+
+OCO_10s:
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
+  PARSER: 'read_OCO_10s'
+  DATA_FIELDS:
+    N_OBS: 'sounding_id'
+    N_EDGES: 'levels'
+    N_CENTERS: 'none'
+    PRESSURE_EDGES: 'none'
+    PRESSURE_WEIGHT: 'pressure_weight'
+    LATITUDE: 'latitude'
+    LONGITUDE: 'longitude'
+    TIME: 'time'
+    AVERAGING_KERNEL: 'xco2_averaging_kernel'
+    PRIOR_PROFILE: 'co2_profile_apriori'
+    SATELLITE_COLUMN: 'xco2_2019_scale'
+    QUALITY_FLAG: 'xco2_quality_flag'
 
 TROPOMI: 
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
