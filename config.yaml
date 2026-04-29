@@ -88,6 +88,23 @@ TROPOMI:
     SATELLITE_COLUMN: 'methane_mixing_ratio_bias_corrected'
     QUALITY_FLAG: 'qa_value'
 
+TROPOMI_blended: 
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
+  PARSER: 'read_TROPOMI_blended'
+  DATA_FIELDS: 
+    N_OBS: 'nobs'
+    N_EDGES: 'none'
+    N_CENTERS: 'layer'
+    PRESSURE_EDGES: 'none' 
+    PRESSURE_WEIGHT: 'none'
+    LATITUDE: 'latitude'
+    LONGITUDE: 'longitude'
+    TIME: 'time_utc'
+    AVERAGING_KERNEL: 'column_averaging_kernel'
+    PRIOR_PROFILE: 'methane_profile_apriori'
+    SATELLITE_COLUMN: 'methane_mixing_ratio_blended'
+    QUALITY_FLAG: 'qa_value'
+
 GOSATv9_0:
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
   PARSER: 'read_GOSATv9_0'
