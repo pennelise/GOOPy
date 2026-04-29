@@ -19,7 +19,6 @@ import xarray as xr
 import utilities as util
 import parsers
 import operators
-import sys
 
 def apply_operator_to_chunks(model_conc_files,
                              model_edge_files,
@@ -39,7 +38,6 @@ def apply_operator_to_chunks(model_conc_files,
     Returns:
         xarray dataset with model columns and satellite columns.
     """
-
     i = 0
     model_columns = []
     satellite_columns = []
