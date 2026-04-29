@@ -98,6 +98,14 @@ def colocate_obs(model, satellite, save_dir=None):
     # If this fails, we will calculate them.
     try:
         idx = xr.open_dataset(f'{save_dir}_idx.nc')
+
+        # Subset the data
+        model = model.isel(TIME=idx['time'], 
+                           LONGITUDE=idx['lon'], LATITUDE=idx['lat'])
+        # Ensure that the pre-computed time and space indices are actually 
+        # correct
+        if model.sizes['N_OBS'] != satellite.sizes['N_OBS']:
+            raise ValueError('Model dimension does not match satellite dimension.')
         print("  Using pre-computed time and space indices.")
     except:
         print("  Computing time and space indices.")
@@ -124,9 +132,9 @@ def colocate_obs(model, satellite, save_dir=None):
         if save_dir is not None:
             idx.to_netcdf(f"{save_dir}_idx.nc")
 
-    # Subset the data
-    model = model.isel(TIME=idx['time'], 
-                       LONGITUDE=idx['lon'], LATITUDE=idx['lat'])
+        # Subset the data
+        model = model.isel(TIME=idx['time'], 
+                        LONGITUDE=idx['lon'], LATITUDE=idx['lat'])
 
     return model
 
