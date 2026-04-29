@@ -28,7 +28,7 @@ def get_model_columns(model, satellite, config, save_dir):
 
     # Get the spatial and temporal indices linking each satellite observation
     # back to the model grid and apply them to the model data
-    if save_interpolation:
+    if save_interpolation.lower() == "true":
         model = util.colocate_obs(model, satellite, save_dir)
     else:
         model = util.colocate_obs(model, satellite)
