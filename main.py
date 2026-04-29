@@ -20,6 +20,76 @@ import utilities as util
 import parsers
 import operators
 
+
+def apply_operator(config):
+    """ Apply one of the default satellite operators to a model profile. 
+    
+    Inputs:
+        config: dictionary with configuration settings.
+        
+    Returns:
+        Saves an xarray dataset with model columns and satellite
+        data to a netcdf file in the directory specified by 
+        config["LOCAL_SETTINGS"]["SAVE_DIR"]. 
+    
+    """
+
+    # Make save out directory
+    if not os.path.exists(config["LOCAL_SETTINGS"]["SAVE_DIR"]):
+        os.makedirs(config["LOCAL_SETTINGS"]["SAVE_DIR"])
+
+    # Also make a directory to save out the components of the operator (e.g.,
+    # space and time indices and the interpolation map) if needed.
+    if config["LOCAL_SETTINGS"]["SAVE_INTERPOLATION"]:
+        save_dir = f'{config["LOCAL_SETTINGS"]["OBS_DIR"]}/operator_components'
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+    # Obtain a list of the satellite and GEOS-Chem files.
+    files = util.get_file_lists(config["LOCAL_SETTINGS"])
+    satellite_files, model_edge_files, model_conc_files = files
+
+    # Get the dates for which we have model files.
+        # TO DO: Currently, this assumes that the GEOS-Chem files are daily or
+        # monthly. We should update this to be more flexible.
+    model_dates = np.unique(
+        [date for date in util.get_gc_dates(model_edge_files)
+         if date in util.get_gc_dates(model_conc_files)])
+
+    # Get the satellite parser. 
+    read_satellite = parsers.get_satellite_parser(config)
+
+    for sf in satellite_files:
+        short_name = sf.split("/")[-1]
+
+        print(f"Processing {short_name}")
+        satellite = read_satellite(sf) # Read the first file
+
+        satellite_dates = [
+            date for date 
+            in np.unique(satellite["TIME"].dt.strftime("%Y-%m-%d"))
+            if date in model_dates
+        ]
+
+        if len(satellite_dates) == 0:
+            print(f"  There are no temporally overlapping model "
+                  f"data for {short_name}")
+            continue
+
+        satellite = satellite.where(
+            satellite["TIME"].dt.strftime("%Y-%m-%d").isin(satellite_dates), 
+            drop=True)
+        satellite = satellite.compute()
+
+        model_columns = apply_operator_to_chunks(
+            model_conc_files, model_edge_files, satellite, config)
+        
+        if model_columns is not None:
+            short_name = short_name.split('.')[0] + '_operator.nc'
+            model_columns.to_netcdf(
+                f'{config["LOCAL_SETTINGS"]["SAVE_DIR"]}/{short_name}')
+
+
 def apply_operator_to_chunks(model_conc_files,
                              model_edge_files,
                              satellite, 
@@ -99,75 +169,6 @@ def apply_operator_to_chunks(model_conc_files,
     else:
         return None
 
-
-def apply_operator(config):
-    """ Apply one of the default satellite operators to a model profile. 
-    
-    Inputs:
-        config: dictionary with configuration settings.
-        
-    Returns:
-        Saves an xarray dataset with model columns and satellite
-        data to a netcdf file in the directory specified by 
-        config["LOCAL_SETTINGS"]["SAVE_DIR"]. 
-    
-    """
-
-    # Make save out directory
-    if not os.path.exists(config["LOCAL_SETTINGS"]["SAVE_DIR"]):
-        os.makedirs(config["LOCAL_SETTINGS"]["SAVE_DIR"])
-
-    # Also make a directory to save out the components of the operator (e.g.,
-    # space and time indices and the interpolation map) if needed.
-    if config["LOCAL_SETTINGS"]["SAVE_INTERPOLATION"]:
-        save_dir = f'{config["LOCAL_SETTINGS"]["OBS_DIR"]}/operator_components'
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-
-    # Obtain a list of the satellite and GEOS-Chem files.
-    files = util.get_file_lists(config["LOCAL_SETTINGS"])
-    satellite_files, model_edge_files, model_conc_files = files
-
-    # Get the dates for which we have model files.
-        # TO DO: Currently, this assumes that the GEOS-Chem files are daily or
-        # monthly. We should update this to be more flexible.
-    model_dates = np.unique(
-        [date for date in util.get_gc_dates(model_edge_files)
-         if date in util.get_gc_dates(model_conc_files)])
-
-    # Get the satellite parser. 
-    read_satellite = parsers.get_satellite_parser(config)
-
-    for sf in satellite_files:
-        short_name = sf.split("/")[-1]
-
-        print(f"Processing {short_name}")
-        satellite = read_satellite(sf) # Read the first file
-
-        satellite_dates = [
-            date for date 
-            in np.unique(satellite["TIME"].dt.strftime("%Y-%m-%d"))
-            if date in model_dates
-        ]
-
-        if len(satellite_dates) == 0:
-            print(f"  There are no temporally overlapping model "
-                  f"data for {short_name}")
-            continue
-
-        satellite = satellite.where(
-            satellite["TIME"].dt.strftime("%Y-%m-%d").isin(satellite_dates), 
-            drop=True)
-        satellite = satellite.compute()
-
-        model_columns = apply_operator_to_chunks(
-            model_conc_files, model_edge_files, satellite, config)
-        
-        if model_columns is not None:
-            short_name = short_name.split('.')[0] + '_operator.nc'
-            model_columns.to_netcdf(
-                f'{config["LOCAL_SETTINGS"]["SAVE_DIR"]}/{short_name}')
-    
 
 if __name__ == "__main__":
     # Run the operator
