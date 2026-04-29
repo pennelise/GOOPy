@@ -305,6 +305,28 @@ def read_TROPOMI(file_path, data_fields):
     # Convert the satellite column from ppb to mol/mol (GEOS-Chem base units)
     satellite["SATELLITE_COLUMN"] *= 1e-9 
 
+    satellite = process_TROPOMI_variables(satellite)
+    # TODO: Handle QA masking? 
+    # TODO: I'm also currently not handling the surface classification variable
+
+    return satellite
+
+
+def read_blended_TROPOMI(file_path, data_fields):
+    # Use the standard parser first
+    satellite = read_satellite_file(file_path, data_fields)
+
+    # Convert the satellite column from ppb to mol/mol (GEOS-Chem base units)
+    satellite["SATELLITE_COLUMN"] *= 1e-9 
+
+    satellite = process_TROPOMI_variables(satellite)
+    # TODO: Handle QA masking? 
+    # TODO: I'm also currently not handling the surface classification variable
+
+    return satellite
+
+
+def process_TROPOMI_variables(satellite):   
     # The prior and the dry_air_subcolumns are both in mol/m2. We use 
     # dry_air_subcolumns to convert the prior to mol/mol
     satellite["PRIOR_PROFILE"] = (satellite["PRIOR_PROFILE"] / 
@@ -336,10 +358,7 @@ def read_TROPOMI(file_path, data_fields):
     satellite["blended_albedo"] = (
         2.4 * satellite["surface_albedo_NIR"] - 
         1.13 * satellite["surface_albedo_SWIR"])
-
-    # TODO: Handle QA masking? 
-    # TODO: I'm also currently not handling the surface classification variable
-
+    
     return satellite
 
 
