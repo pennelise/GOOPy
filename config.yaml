@@ -104,6 +104,23 @@ TROPOMI_blended:
     PRIOR_PROFILE: 'methane_profile_apriori'
     SATELLITE_COLUMN: 'methane_mixing_ratio_blended'
     QUALITY_FLAG: 'qa_value'
+  
+MSAT: 
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
+  PARSER: 'read_MSAT'
+  DATA_FIELDS: 
+    N_OBS: 'none'
+    N_EDGES: 'none'
+    N_CENTERS: 'none'
+    PRESSURE_EDGES: 'none' 
+    PRESSURE_WEIGHT: 'none'
+    LATITUDE: 'lat'
+    LONGITUDE: 'lon'
+    TIME: 'time'
+    AVERAGING_KERNEL: 'none'
+    PRIOR_PROFILE: 'none'
+    SATELLITE_COLUMN: 'xch4'
+    QUALITY_FLAG: 'none'
 
 GOSATv9_0:
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'

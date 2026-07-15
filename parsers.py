@@ -361,6 +361,135 @@ def process_TROPOMI_variables(satellite):
     
     return satellite
 
+def _msat_gosat_pressure_grid(surface_pressure, tropopause_pressure=100.0):
+    """Build the 19-layer pressure grid used by the MSAT reference scripts."""
+    surface_pressure = np.asarray(surface_pressure)
+    pressure_edges = np.zeros((surface_pressure.size, 20))
+
+    # Tropospheric sigma levels, followed by the fixed stratospheric grid from
+    # msat_funcs.gosat_pressure_grid.
+    trop_sigma = np.linspace(0, 1, 14)[::-1]
+    for level in range(14):
+        pressure_edges[:, level] = (
+            tropopause_pressure
+            + trop_sigma[level] * (surface_pressure - tropopause_pressure)
+        )
+
+    pressure_edges[:, 15:] = np.array([80.0, 50.0, 10.0, 1.0, 0.1])
+    pressure_edges[:, 14] = 0.5 * (pressure_edges[:, 13] + pressure_edges[:, 15])
+
+    return pressure_edges
+
+
+def read_MSAT(file_path, data_fields):
+    # These fixed 19-level profiles are copied from msat_funcs.py. The reference
+    # code flips them before saving because the pressure grid runs from the
+    # surface to the top of the atmosphere.
+    example_ak = np.array([
+        0.54948103, 0.5463017, 0.5425764, 0.5630824, 0.586732,
+        0.61969376, 0.6751325, 0.7441332, 0.7991072, 0.8353182,
+        0.87577033, 0.92045873, 0.9373637, 0.97244173, 0.99397856,
+        1.0006262, 1.0219611, 1.0428349, 1.0573764,
+    ])[::-1]
+    example_prior = np.array([
+        224.05298, 685.95667, 1449.2792, 1765.1627, 1894.5641,
+        1929.3362, 1993.0267, 2023.5267, 2023.5922, 2023.6508,
+        2024.5969, 2024.6519, 2024.6962, 2024.9379, 2024.9979,
+        2025.0558, 2038.752, 2040.5107, 2040.6727,
+    ])[::-1]
+
+    root_vars = [
+        data_fields["TIME"],
+        data_fields["SATELLITE_COLUMN"],
+    ]
+    optional_root_vars = ["num_samples", "total_sample_weight"]
+    root = xr.open_dataset(file_path)
+    root = root[root_vars + [v for v in optional_root_vars if v in root]]
+
+    apriori = xr.open_dataset(file_path, group="apriori_data")[["surface_pressure"]]
+    satellite = xr.merge([root, apriori])
+
+    rename_fields = {
+        v: k for k, v in data_fields.items()
+        if (
+            v.lower() != "none"
+            and v in satellite
+            and k not in ["LATITUDE", "LONGITUDE"]
+        )
+    }
+    satellite = satellite.rename(rename_fields)
+
+    latitudes, longitudes = xr.broadcast(
+        satellite[data_fields["LATITUDE"]], satellite[data_fields["LONGITUDE"]]
+    )
+    satellite["LATITUDE"] = latitudes
+    satellite["LONGITUDE"] = longitudes
+
+    satellite = satellite.stack(
+        N_OBS=(data_fields["LATITUDE"], data_fields["LONGITUDE"])
+    )
+    satellite = satellite.reset_index("N_OBS", drop=True)
+    satellite = satellite.where(
+        np.isfinite(satellite["SATELLITE_COLUMN"])
+        & np.isfinite(satellite["surface_pressure"])
+        & (satellite["SATELLITE_COLUMN"] > 0)
+        & (satellite["surface_pressure"] > 0),
+        drop=True,
+    )
+
+    if not np.issubdtype(satellite["TIME"].dtype, np.datetime64):
+        satellite["TIME"] = xr.DataArray(
+            pd.to_datetime(satellite["TIME"].values, unit="s", origin="unix"),
+            dims=["N_OBS"],
+            coords={"N_OBS": satellite["N_OBS"]},
+        )
+
+    satellite["SATELLITE_COLUMN"] *= 1e-9
+
+    pressure_edges = _msat_gosat_pressure_grid(satellite["surface_pressure"].values)
+    satellite["PRESSURE_EDGES"] = xr.DataArray(
+        pressure_edges,
+        dims=["N_OBS", "N_EDGES"],
+        coords={
+            "N_OBS": satellite["N_OBS"],
+            "N_EDGES": np.arange(pressure_edges.shape[1]),
+        },
+    )
+
+    pressure_thickness = -satellite["PRESSURE_EDGES"].diff(dim="N_EDGES")
+    pressure_thickness = pressure_thickness.rename({"N_EDGES": "N_CENTERS"})
+    pressure_thickness = pressure_thickness.assign_coords(
+        N_CENTERS=np.arange(pressure_thickness.sizes["N_CENTERS"])
+    )
+    satellite["PRESSURE_WEIGHT"] = (
+        pressure_thickness / pressure_thickness.sum(dim="N_CENTERS")
+    )
+
+    n_obs = satellite.sizes["N_OBS"]
+    satellite["AVERAGING_KERNEL"] = xr.DataArray(
+        np.tile(example_ak, (n_obs, 1)),
+        dims=["N_OBS", "N_CENTERS"],
+        coords={
+            "N_OBS": satellite["N_OBS"],
+            "N_CENTERS": satellite["N_CENTERS"],
+        },
+    )
+    satellite["PRIOR_PROFILE"] = xr.DataArray(
+        np.tile(example_prior * 1e-9, (n_obs, 1)),
+        dims=["N_OBS", "N_CENTERS"],
+        coords={
+            "N_OBS": satellite["N_OBS"],
+            "N_CENTERS": satellite["N_CENTERS"],
+        },
+    )
+
+    if "num_samples" in satellite:
+        satellite = satellite.rename({"num_samples": "OBS_COUNT"})
+    if "total_sample_weight" in satellite:
+        satellite = satellite.rename({"total_sample_weight": "TOTAL_SAMPLE_WEIGHT"})
+
+    return satellite.drop_vars("surface_pressure")
+
 
 def read_OCO2_v11_1_preprocessed(file_path, data_fields):
     # Use the standard parser first
