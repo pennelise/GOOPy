@@ -62,28 +62,77 @@ def read_geoschem_file(file_path_conc, file_path_edges, data_fields):
     return gc
 
 
+# TODO: confirm all of the functions that call read_satellite_file are still working correctly with the new grouped file handling logic
 def read_satellite_file(file_path, data_fields):
     '''
-    This generic parser assumes that the data is a netcdf with a single, 
-    main group with variables as defined in the config.yaml file. It 
-    also assumes that all filtering is contained in an optional quality_flag
-    file that is 0 for quality data and 1 elsewhere. In reality, satellite
-    data may be contained in complex netcdf files with multiple groups and 
-    may require filtering along multiple criteria. Please write your own 
-    parser in these cases.
+    Read satellite fields from either a flat or grouped NetCDF file.
+
+    The traditional ``STANDARD_NAME: source_name`` DATA_FIELDS format is
+    retained for flat files. For grouped files, a source can instead be a
+    mapping with ``name`` and ``group`` keys, for example::
+
+        LATITUDE:
+          group: PRODUCT
+          name: latitude
+
+    ``group`` may contain a nested path such as ``PRODUCT/SUPPORT_DATA``.
+    Omitting it (or setting it to null, an empty string, or ``/``) selects the
+    root group. Fields whose source name is ``none`` are ignored.
     '''
-    # Remove quality_flag if it isn"t present in the fields
-    data_fields = {k : v for k, v in data_fields.items() if v.lower() != "none"}
+    grouped_fields = any(isinstance(source, dict)
+                         for source in data_fields.values())
 
-    # Open the file (and remove subsetting because we want to keep variables)
-    satellite = xr.open_dataset(file_path)
+    # Preserve the original behavior for existing, flat-file configurations.
+    if not grouped_fields:
+        data_fields = {k: v for k, v in data_fields.items()
+                       if str(v).lower() != "none"}
+        satellite = xr.open_dataset(file_path)
+        return satellite.rename({v: k for k, v in data_fields.items()})
 
-    # Rename satellite dimension names to the standard from config.yaml
-    rename_fields = {v : k for k, v in data_fields.items()}
-    satellite = satellite.rename(rename_fields)
+    fields_by_group = {}
+    for standard_name, source in data_fields.items():
+        if isinstance(source, str):
+            source_name, group = source, None
+        elif isinstance(source, dict):
+            if "name" not in source:
+                raise ValueError(
+                    f"DATA_FIELDS.{standard_name} is missing required key 'name'"
+                )
+            source_name = source.get("name")
+            group = source.get("group")
+        else:
+            raise TypeError(
+                f"DATA_FIELDS.{standard_name} must be a string or mapping"
+            )
 
-    # Return the data
-    return satellite
+        if source_name is None or str(source_name).lower() == "none":
+            continue
+        if group in (None, "", "/"):
+            group = None
+        fields_by_group.setdefault(group, {})[source_name] = standard_name
+
+    datasets = []
+    for group, rename_fields in fields_by_group.items():
+        open_kwargs = {} if group is None else {"group": group}
+        dataset = xr.open_dataset(file_path, **open_kwargs)
+
+        missing = set(rename_fields) - set(dataset.variables) - set(dataset.dims)
+        if missing:
+            location = "root group" if group is None else f"group {group!r}"
+            raise KeyError(
+                f"Fields not found in {location}: {sorted(missing)}"
+            )
+
+        dataset = dataset.rename(rename_fields)
+        # Keep mapped data variables and coordinates. Dimensions named in the
+        # mapping remain attached to those variables after the rename.
+        selected = [name for name in rename_fields.values()
+                    if name in dataset.variables]
+        datasets.append(dataset[selected])
+
+    if not datasets:
+        return xr.Dataset()
+    return xr.merge(datasets)
 
 
 def read_TCCON_MIP(file_path, data_fields):
@@ -252,6 +301,32 @@ def shift_tccon_pressure_grid(row, fill_zero=True):
     ])
 
 
+def read_SENTINEL_5(file_path, data_fields):
+    # Use the standard parser first
+    satellite = read_satellite_file(file_path, data_fields)
+
+    satellite = satellite.squeeze(drop=True)
+    satellite = satellite.stack(N_OBS=("scanline", "ground_pixel"))
+    satellite = satellite.reset_index("N_OBS", drop=True)
+    satellite = satellite.reset_coords(["LATITUDE", "LONGITUDE"])
+    satellite = satellite.where(~satellite["SATELLITE_COLUMN"].isnull(),
+                                drop=True)
+
+    # TODO: S5P data says SATELLITE_COLUMN is in mol Gmol-1. Does this need to be converted to mol/mol? 
+    # Convert the satellite column from ppb to mol/mol (GEOS-Chem base units)
+    satellite["SATELLITE_COLUMN"] *= 1e-9 
+
+    # Process the time variable
+    satellite["TIME"] = xr.DataArray(
+        [t.replace("Z", "") for t in satellite["TIME"].values],
+        coords=satellite["TIME"].coords,
+        dims=satellite["TIME"].dims).astype("datetime64[ns]"
+    )
+
+    return satellite
+
+
+# TODO: see if we can formulate this into the format of the read_SENTINEL_5 function
 def read_TROPOMI(file_path, data_fields):
     # Define where each of the needed variables are found
     group_to_vars = {

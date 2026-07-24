@@ -104,6 +104,39 @@ TROPOMI_blended:
     PRIOR_PROFILE: 'methane_profile_apriori'
     SATELLITE_COLUMN: 'methane_mixing_ratio_blended'
     QUALITY_FLAG: 'qa_value'
+  
+SENTINEL_5:
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers' # TODO: confirm this is right
+  PARSER: 'read_SENTINEL_5'
+  DATA_FIELDS:
+    N_OBS: 'none'
+    N_EDGES: 'none'
+    N_CENTERS: 
+      name: 'layer'
+      group: 'PRODUCT/SUPPORT_DATA/DETAILED_RESULTS'
+    PRESSURE_EDGES: # TODO: this has units of Pa, but we need hPa. Parser should convert to hPa.
+      name: 'pressure'
+      group: 'PRODUCT/SUPPORT_DATA/DETAILED_RESULTS'
+    PRESSURE_WEIGHT: 'none'
+    LATITUDE: 
+      name: 'latitude'
+      group: 'data/PRODUCT/SUPPORT_DATA/GEOLOCATIONS'
+    LONGITUDE: 
+      name: 'longitude'
+      group: 'data/PRODUCT/SUPPORT_DATA/GEOLOCATIONS'
+    TIME: 
+      name: 'time'
+      group: 'data/PRODUCT'
+    AVERAGING_KERNEL: 'methane_total_column_averaging_kernel' # methane_non_scattering_total_column_averaging_kernel
+    PRIOR_PROFILE: 
+      name: 'methane_profile_apriori'
+      group: 'data/PRODUCT/SUPPORT_DATA/DETAILED_RESULTS'
+    SATELLITE_COLUMN: 
+      name: 'methane_dry_air_column_mixing_ratio_physics' # there's also methane_dry_air_column_mixing_ratio_proxy
+      group: 'data/PRODUCT'
+    QUALITY_FLAG: 
+      name: 'qa_value'
+      group: 'data/PRODUCT'
 
 GOSATv9_0:
   AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'edges'
