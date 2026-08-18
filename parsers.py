@@ -23,7 +23,7 @@ def _open_geoschem(file_path, variables):
         if re.search(r"[\*]", var_pattern):
             save_vars.update(
                 {var : 
-                 f"{default_name}_{var.split(var_pattern.split(".*")[0])[-1]}" 
+                 f"{default_name}_{var.split(var_pattern.split('.*')[0])[-1]}"
                  for var in data.variables if re.match(var_pattern, var)})
         else:
             # If it"s an exact match, check if it"s in the dataset
@@ -84,6 +84,53 @@ def read_satellite_file(file_path, data_fields):
 
     # Return the data
     return satellite
+
+
+def read_IMI_superobservations(file_path, data_fields):
+    """Read the product-neutral IMI superobservation format."""
+    satellite = xr.open_dataset(file_path)
+    if satellite.attrs.get("format_name") != "IMI_superobservation":
+        raise ValueError(f"{file_path} is not an IMI superobservation file")
+
+    required = {
+        "latitude", "longitude", "time", "column", "pressure_edges",
+        "pressure_weight", "averaging_kernel", "prior_profile",
+        "observation_count",
+    }
+    missing = required.difference(satellite.variables)
+    if missing:
+        raise ValueError(
+            f"IMI superobservation file is missing fields: {sorted(missing)}"
+        )
+    if satellite.sizes["edge"] != satellite.sizes["layer"] + 1:
+        raise ValueError("IMI superobservation edge dimension must equal layer + 1")
+    if not np.allclose(satellite["pressure_weight"].sum("layer"), 1.0):
+        raise ValueError("IMI superobservation pressure weights must sum to one")
+
+    pressure_units = satellite["pressure_edges"].attrs.get("units")
+    if pressure_units != "Pa":
+        raise ValueError(
+            f"Canonical pressure_edges units must be 'Pa', got {pressure_units!r}"
+        )
+    # GOOPy's model pressure grid uses hPa internally.
+    satellite["pressure_edges"] = satellite["pressure_edges"] / 100.0
+    satellite["pressure_edges"].attrs["units"] = "hPa"
+
+    satellite = satellite.rename({
+        "observation": "N_OBS", "edge": "N_EDGES", "layer": "N_CENTERS",
+        "latitude": "LATITUDE", "longitude": "LONGITUDE", "time": "TIME",
+        "column": "SATELLITE_COLUMN", "pressure_edges": "PRESSURE_EDGES",
+        "pressure_weight": "PRESSURE_WEIGHT",
+        "averaging_kernel": "AVERAGING_KERNEL",
+        "prior_profile": "PRIOR_PROFILE",
+        "observation_count": "OBS_COUNT",
+    })
+    valid = (
+        np.isfinite(satellite["SATELLITE_COLUMN"])
+        & np.isfinite(satellite["OBS_COUNT"])
+        & (satellite["OBS_COUNT"] > 0)
+    )
+    return satellite.where(valid, drop=True)
 
 
 def read_TCCON_MIP(file_path, data_fields):

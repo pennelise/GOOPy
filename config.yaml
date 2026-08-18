@@ -17,6 +17,24 @@ LOCAL_SETTINGS:
   N_THREADS: 8
 
 # Observations
+IMI_superobservation:
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
+  PARSER: 'read_IMI_superobservations'
+  DATA_FIELDS:
+    N_OBS: 'observation'
+    N_EDGES: 'edge'
+    N_CENTERS: 'layer'
+    PRESSURE_EDGES: 'pressure_edges'
+    PRESSURE_WEIGHT: 'pressure_weight'
+    LATITUDE: 'latitude'
+    LONGITUDE: 'longitude'
+    TIME: 'time'
+    AVERAGING_KERNEL: 'averaging_kernel'
+    PRIOR_PROFILE: 'prior_profile'
+    SATELLITE_COLUMN: 'column'
+    OBS_COUNT: 'observation_count'
+    QUALITY_FLAG: 'none'
+
 TCCON_MIP:
   # NOTE: The TCCON MIP data is technically on pressure edges, but the parser
   # interpolates all the data onto a common pressure center grid. So, we 
