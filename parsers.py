@@ -450,7 +450,10 @@ def read_MSAT(file_path, data_fields):
         data_fields["SATELLITE_COLUMN"],
     ]
     optional_root_vars = ["num_samples", "total_sample_weight"]
-    root = xr.open_dataset(file_path)
+    # MethaneSAT L3 currently uses the non-CF reference string
+    # "seconds since 1970-1-1 0:0:0, in UTC". Read numeric epoch seconds and
+    # convert them explicitly below instead of asking xarray to decode it.
+    root = xr.open_dataset(file_path, decode_times=False)
     root = root[root_vars + [v for v in optional_root_vars if v in root]]
 
     apriori = xr.open_dataset(file_path, group="apriori_data")[["surface_pressure"]]
