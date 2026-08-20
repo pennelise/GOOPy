@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import re
 import inspect
-from interpolation import VerticalGrid
+from .interpolation import VerticalGrid
 
 def _open_geoschem(file_path, variables):
     # Open the dataset

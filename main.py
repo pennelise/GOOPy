@@ -16,9 +16,9 @@ os.environ['OMP_NUM_THREADS'] = str(config['LOCAL_SETTINGS']['N_THREADS'])
 # Additional imports
 import numpy as np
 import xarray as xr
-import utilities as util
-import parsers
-import operators
+from . import utilities as util
+from . import parsers
+from . import operators
 
 
 def apply_operator(config):
