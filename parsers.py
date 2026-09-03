@@ -23,7 +23,7 @@ def _open_geoschem(file_path, variables):
         if re.search(r"[\*]", var_pattern):
             save_vars.update(
                 {var : 
-                 f"{default_name}_{var.split(var_pattern.split('.*')[0])[-1]}"
+                 f"{default_name}_{var.split(var_pattern.split('.*')[0])[-1]}" 
                  for var in data.variables if re.match(var_pattern, var)})
         else:
             # If it"s an exact match, check if it"s in the dataset
@@ -359,7 +359,7 @@ def read_TROPOMI(file_path, data_fields):
     return satellite
 
 
-def read_blended_TROPOMI(file_path, data_fields):
+def read_TROPOMI_blended(file_path, data_fields):
     # Use the standard parser first
     satellite = read_satellite_file(file_path, data_fields)
 

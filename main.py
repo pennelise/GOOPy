@@ -34,16 +34,13 @@ def apply_operator(config):
     
     """
 
-    # Make save out directory
-    if not os.path.exists(config["LOCAL_SETTINGS"]["SAVE_DIR"]):
-        os.makedirs(config["LOCAL_SETTINGS"]["SAVE_DIR"])
+    os.makedirs(config["LOCAL_SETTINGS"]["SAVE_DIR"], exist_ok=True)
 
     # Also make a directory to save out the components of the operator (e.g.,
     # space and time indices and the interpolation map) if needed.
     if config["LOCAL_SETTINGS"]["SAVE_INTERPOLATION"]:
         save_dir = f'{config["LOCAL_SETTINGS"]["OBS_DIR"]}/operator_components'
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
+        os.makedirs(save_dir, exist_ok=True)
 
     # Obtain a list of the satellite and GEOS-Chem files.
     files = util.get_file_lists(config["LOCAL_SETTINGS"])
