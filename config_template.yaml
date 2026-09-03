@@ -78,6 +78,24 @@ LOCAL_SETTINGS:
   # is run within the run file, immediately after GEOS-Chem.
 
 # Observations
+IMI_superobservation:
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
+  PARSER: 'read_IMI_superobservations'
+  DATA_FIELDS:
+    N_OBS: 'observation'
+    N_EDGES: 'edge'
+    N_CENTERS: 'layer'
+    PRESSURE_EDGES: 'pressure_edges'
+    PRESSURE_WEIGHT: 'pressure_weight'
+    LATITUDE: 'latitude'
+    LONGITUDE: 'longitude'
+    TIME: 'time'
+    AVERAGING_KERNEL: 'averaging_kernel'
+    PRIOR_PROFILE: 'prior_profile'
+    SATELLITE_COLUMN: 'column'
+    OBS_COUNT: 'observation_count'
+    QUALITY_FLAG: 'none'
+
 <SATELLITE_NAME>: 
 # Each observation type has its own block. The name of the block should 
 # correspond to the name specified in LOCAL_SETTINGS for SATELLITE_NAME.
