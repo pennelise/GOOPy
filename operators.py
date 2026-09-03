@@ -1,7 +1,7 @@
 import numpy as np
 import xarray as xr
-from interpolation import VerticalGrid
-import utilities as util
+from .interpolation import VerticalGrid
+from . import utilities as util
 
 def apply_averaging_kernel(model_on_satellite_levels, satellite):
     model_column = np.sum(satellite["PRESSURE_WEIGHT"].values[:, :, None]
