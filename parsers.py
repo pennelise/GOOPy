@@ -86,6 +86,117 @@ def read_satellite_file(file_path, data_fields):
     return satellite
 
 
+def read_h5_satellite_file(file_path, data_fields):
+    """Read selected datasets from a hierarchical HDF5 satellite product.
+
+    ``data_fields`` maps GOOPy variable names to full HDF5 dataset paths.  For
+    example, ``LATITUDE: Data/geolocation/latitude`` reads that dataset and
+    exposes it as ``LATITUDE``.  Entries whose value is ``none`` are ignored.
+
+    The observation dimension is inferred from ``LATITUDE`` (or ``TIME`` when
+    latitude is unavailable).  Known vertical variables are assigned to
+    ``N_EDGES`` or ``N_CENTERS``; other dimensions receive stable names based
+    on the output field name.  Product-specific unit conversion, filtering,
+    or construction of missing operator quantities belongs in a thin wrapper
+    around this function, as in :func:`read_GOSAT_NIES_L2`.
+    """
+    try:
+        import h5py
+    except ImportError as exc:
+        raise ImportError(
+            "read_h5_satellite_file requires h5py to read HDF5 files"
+        ) from exc
+
+    fields = {
+        name: path for name, path in data_fields.items()
+        if isinstance(path, str) and path.lower() != "none"
+        and name not in {"N_OBS", "N_EDGES", "N_CENTERS"}
+    }
+    if not fields:
+        raise ValueError("No HDF5 datasets were specified in DATA_FIELDS")
+
+    arrays = {}
+    attributes = {}
+    with h5py.File(file_path, "r") as handle:
+        missing = [path for path in fields.values() if path not in handle]
+        if missing:
+            raise ValueError(
+                f"{file_path} is missing configured HDF5 datasets: {missing}"
+            )
+        for name, path in fields.items():
+            dataset = handle[path]
+            value = dataset[()]
+            if np.issubdtype(value.dtype, np.bytes_):
+                value = np.char.decode(value, "utf-8")
+            arrays[name] = value
+            attributes[name] = {
+                key: _decode_h5_attribute(attr)
+                for key, attr in dataset.attrs.items()
+            }
+
+    observation_field = next(
+        (name for name in ("LATITUDE", "TIME") if name in arrays), None
+    )
+    if observation_field is None or arrays[observation_field].ndim != 1:
+        raise ValueError(
+            "DATA_FIELDS must include a one-dimensional LATITUDE or TIME "
+            "dataset so N_OBS can be inferred"
+        )
+    n_obs = arrays[observation_field].shape[0]
+
+    edge_fields = {"PRESSURE_EDGES"}
+    center_fields = {
+        "PRESSURE_WEIGHT", "AVERAGING_KERNEL", "PRIOR_PROFILE",
+        "DRY_AIR_PARTIAL_COLUMN",
+    }
+    variables = {}
+    dimension_sizes = {"N_OBS": n_obs}
+    for name, value in arrays.items():
+        if value.ndim == 0:
+            variables[name] = value
+            continue
+
+        dims = []
+        for axis, size in enumerate(value.shape):
+            if axis == 0 and size == n_obs:
+                dim = "N_OBS"
+            elif axis == 1 and name in edge_fields:
+                dim = "N_EDGES"
+            elif axis == 1 and name in center_fields:
+                dim = "N_CENTERS"
+            else:
+                dim = f"{name}_DIM_{axis}"
+            if dim in dimension_sizes and dimension_sizes[dim] != size:
+                raise ValueError(
+                    f"Configured fields disagree on the size of {dim}: "
+                    f"{dimension_sizes[dim]} and {size}"
+                )
+            dimension_sizes[dim] = size
+            dims.append(dim)
+        variables[name] = (tuple(dims), value)
+
+    satellite = xr.Dataset(variables)
+    for name, attrs in attributes.items():
+        satellite[name].attrs.update(attrs)
+    if "TIME" in satellite and satellite["TIME"].dtype.kind in {"O", "S", "U"}:
+        satellite["TIME"] = xr.DataArray(
+            pd.to_datetime(satellite["TIME"].values, errors="coerce"),
+            dims=satellite["TIME"].dims,
+            attrs=satellite["TIME"].attrs,
+        )
+    return satellite
+
+
+def _decode_h5_attribute(value):
+    """Convert an HDF5 attribute to ordinary Python/NumPy text values."""
+    value = np.asarray(value)
+    if np.issubdtype(value.dtype, np.bytes_):
+        value = np.char.decode(value, "utf-8")
+    if value.size == 1:
+        return value.reshape(-1)[0].item()
+    return value.tolist()
+
+
 def read_IMI_superobservations(file_path, data_fields):
     """Read the product-neutral IMI superobservation format."""
     satellite = xr.open_dataset(file_path)
@@ -539,6 +650,82 @@ def read_MSAT(file_path, data_fields):
         satellite = satellite.rename({"total_sample_weight": "TOTAL_SAMPLE_WEIGHT"})
 
     return satellite.drop_vars("surface_pressure")
+
+
+def read_GOSAT_NIES_L2(file_path, data_fields):
+    """Read the native NIES GOSAT TANSO-FTS SWIR CH4 Level-2 product.
+
+    This reader supports the hierarchical HDF5 ``C02S`` files (including
+    product V03.05), which are not netCDF files and therefore cannot be read
+    reliably with :func:`xarray.open_dataset`.  NIES stores the 15 retrieval
+    layers from the top of the atmosphere toward the surface.  GOOPy uses the
+    opposite convention, so all layer quantities are reversed here.
+
+    Dataset paths are supplied entirely through ``data_fields``.  This wrapper
+    only implements GOSAT-specific screening, units, and vertical conventions.
+    """
+    satellite = read_h5_satellite_file(file_path, data_fields)
+
+    required = {
+        "LATITUDE", "LONGITUDE", "TIME", "SATELLITE_COLUMN",
+        "COLUMN_ERROR", "AVERAGING_KERNEL", "PRIOR_PROFILE",
+        "DRY_AIR_PARTIAL_COLUMN", "SURFACE_PRESSURE",
+        "PRE_SCREENING_FLAG", "QUALITY_FLAG", "SCAN_ID",
+    }
+    missing = required.difference(satellite.variables)
+    if missing:
+        raise ValueError(f"GOSAT DATA_FIELDS are missing: {sorted(missing)}")
+
+    # Invalid floating-point values in this product are encoded as -9999 or
+    # -1e30.  Screening status zero denotes a successful retrieval.
+    valid = (
+        np.isfinite(satellite["LATITUDE"])
+        & np.isfinite(satellite["LONGITUDE"])
+        & np.isfinite(satellite["SATELLITE_COLUMN"])
+        & np.isfinite(satellite["SURFACE_PRESSURE"])
+        & satellite["TIME"].notnull()
+        & (np.abs(satellite["LATITUDE"]) <= 90)
+        & (np.abs(satellite["LONGITUDE"]) <= 180)
+        & (satellite["SATELLITE_COLUMN"] > 0)
+        & (satellite["SURFACE_PRESSURE"] > 0)
+        & (satellite["PRE_SCREENING_FLAG"] == 0)
+        & (satellite["QUALITY_FLAG"] == 0)
+        & (satellite["DRY_AIR_PARTIAL_COLUMN"] > 0).all("N_CENTERS")
+        & (satellite["PRIOR_PROFILE"] > 0).all("N_CENTERS")
+        & (satellite["AVERAGING_KERNEL"] > -100).all("N_CENTERS")
+    )
+    satellite = satellite.where(valid, drop=True)
+
+    # Native layer order is TOA -> surface; GOOPy requires surface -> TOA.
+    satellite = satellite.isel(N_CENTERS=slice(None, None, -1))
+    n_obs = satellite.sizes["N_OBS"]
+    n_layers = satellite.sizes["N_CENTERS"]
+    pressure_edges = satellite["SURFACE_PRESSURE"].values[:, None] * np.linspace(
+        1.0, 0.0, n_layers + 1
+    )[None, :]
+    satellite["PRESSURE_EDGES"] = xr.DataArray(
+        pressure_edges,
+        dims=["N_OBS", "N_EDGES"],
+        coords={"N_OBS": satellite["N_OBS"], "N_EDGES": np.arange(n_layers + 1)},
+    )
+    satellite["PRESSURE_WEIGHT"] = (
+        satellite["DRY_AIR_PARTIAL_COLUMN"]
+        / satellite["DRY_AIR_PARTIAL_COLUMN"].sum("N_CENTERS")
+    )
+    satellite["SATELLITE_COLUMN"] *= 1e-6
+    satellite["COLUMN_ERROR"] *= 1e-6
+    satellite["PRIOR_PROFILE"] *= 1e-6
+    satellite = satellite.drop_vars(
+        ["DRY_AIR_PARTIAL_COLUMN", "SURFACE_PRESSURE", "PRE_SCREENING_FLAG"]
+    )
+    satellite.attrs["source_product"] = (
+        "NIES GOSAT TANSO-FTS SWIR Level 2 C02S"
+    )
+    satellite["PRESSURE_EDGES"].attrs["units"] = "hPa"
+    satellite["SATELLITE_COLUMN"].attrs["units"] = "mol mol-1 dry air"
+    satellite["COLUMN_ERROR"].attrs["units"] = "mol mol-1 dry air"
+    satellite["PRIOR_PROFILE"].attrs["units"] = "mol mol-1 dry air"
+    return satellite
 
 
 def read_OCO2_v11_1_preprocessed(file_path, data_fields):

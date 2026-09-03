@@ -157,6 +157,29 @@ GOSATv9_0:
     SATELLITE_COLUMN: 'xch4'
     QUALITY_FLAG: 'xch4_quality_flag'
 
+GOSAT_NIES_L2:
+  # Native NIES TANSO-FTS SWIR CH4 Level-2 C02S HDF5 (e.g. V03.05).
+  AVERAGING_KERNEL_USES_CENTERS_OR_EDGES: 'centers'
+  PARSER: 'read_GOSAT_NIES_L2'
+  DATA_FIELDS:
+    N_OBS: 'none'
+    N_EDGES: 'none'
+    N_CENTERS: 'none'
+    PRESSURE_EDGES: 'none'
+    PRESSURE_WEIGHT: 'none'
+    LATITUDE: 'Data/geolocation/latitude'
+    LONGITUDE: 'Data/geolocation/longitude'
+    TIME: 'scanAttribute/time'
+    AVERAGING_KERNEL: 'Data/retrievalQuality/columnAveragingKernel'
+    PRIOR_PROFILE: 'scanAttribute/referenceData/CH4Profile'
+    SATELLITE_COLUMN: 'Data/mixingRatio/XCH4BiasCorrected'
+    QUALITY_FLAG: 'Data/retrievalQuality/totalPostScreeningResult'
+    COLUMN_ERROR: 'Data/mixingRatio/XCH4BiasCorrectedError'
+    DRY_AIR_PARTIAL_COLUMN: 'scanAttribute/referenceData/dryAirPartialColumn'
+    SURFACE_PRESSURE: 'Data/auxiliaryParameter/surfacePressure'
+    PRE_SCREENING_FLAG: 'scanAttribute/qualityInformation/totalPreScreeningResult'
+    SCAN_ID: 'scanAttribute/scanID'
+
 # Model
 MODEL:
   DATA_FIELDS:
