@@ -5,6 +5,23 @@ import re
 import inspect
 from .interpolation import VerticalGrid
 
+# These fixed 19-level profiles are copied from msat_funcs.py. The reference
+# code flips them before saving because the pressure grid runs from the
+# surface to the top of the atmosphere.
+FIXED_MSAT_AVERAGING_KERNEL = np.array([
+    0.54948103, 0.5463017, 0.5425764, 0.5630824, 0.586732,
+    0.61969376, 0.6751325, 0.7441332, 0.7991072, 0.8353182,
+    0.87577033, 0.92045873, 0.9373637, 0.97244173, 0.99397856,
+    1.0006262, 1.0219611, 1.0428349, 1.0573764,
+], dtype=np.float64)[::-1]
+
+FIXED_MSAT_PRIOR_PROFILE = np.array([
+    224.05298, 685.95667, 1449.2792, 1765.1627, 1894.5641,
+    1929.3362, 1993.0267, 2023.5267, 2023.5922, 2023.6508,
+    2024.5969, 2024.6519, 2024.6962, 2024.9379, 2024.9979,
+    2025.0558, 2038.752, 2040.5107, 2040.6727,
+], dtype=np.float64)[::-1]
+
 def _open_geoschem(file_path, variables):
     # Open the dataset
     # data = xr.open_mfdataset(file_path, parallel=True)
@@ -429,22 +446,6 @@ def _msat_gosat_pressure_grid(surface_pressure, tropopause_pressure=100.0):
 
 
 def read_MSAT(file_path, data_fields):
-    # These fixed 19-level profiles are copied from msat_funcs.py. The reference
-    # code flips them before saving because the pressure grid runs from the
-    # surface to the top of the atmosphere.
-    example_ak = np.array([
-        0.54948103, 0.5463017, 0.5425764, 0.5630824, 0.586732,
-        0.61969376, 0.6751325, 0.7441332, 0.7991072, 0.8353182,
-        0.87577033, 0.92045873, 0.9373637, 0.97244173, 0.99397856,
-        1.0006262, 1.0219611, 1.0428349, 1.0573764,
-    ])[::-1]
-    example_prior = np.array([
-        224.05298, 685.95667, 1449.2792, 1765.1627, 1894.5641,
-        1929.3362, 1993.0267, 2023.5267, 2023.5922, 2023.6508,
-        2024.5969, 2024.6519, 2024.6962, 2024.9379, 2024.9979,
-        2025.0558, 2038.752, 2040.5107, 2040.6727,
-    ])[::-1]
-
     root_vars = [
         data_fields["TIME"],
         data_fields["SATELLITE_COLUMN"],
@@ -517,7 +518,7 @@ def read_MSAT(file_path, data_fields):
 
     n_obs = satellite.sizes["N_OBS"]
     satellite["AVERAGING_KERNEL"] = xr.DataArray(
-        np.tile(example_ak, (n_obs, 1)),
+        np.tile(FIXED_MSAT_AVERAGING_KERNEL, (n_obs, 1)),
         dims=["N_OBS", "N_CENTERS"],
         coords={
             "N_OBS": satellite["N_OBS"],
@@ -525,7 +526,7 @@ def read_MSAT(file_path, data_fields):
         },
     )
     satellite["PRIOR_PROFILE"] = xr.DataArray(
-        np.tile(example_prior * 1e-9, (n_obs, 1)),
+        np.tile(FIXED_MSAT_PRIOR_PROFILE * 1e-9, (n_obs, 1)),
         dims=["N_OBS", "N_CENTERS"],
         coords={
             "N_OBS": satellite["N_OBS"],
