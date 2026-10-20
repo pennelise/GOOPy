@@ -38,7 +38,7 @@ def apply_operator(config):
 
     # Also make a directory to save out the components of the operator (e.g.,
     # space and time indices and the interpolation map) if needed.
-    if config["LOCAL_SETTINGS"]["SAVE_INTERPOLATION"]:
+    if config["LOCAL_SETTINGS"]["SAVE_INTERPOLATION"].lower() == "true":
         save_dir = f'{config["LOCAL_SETTINGS"]["OBS_DIR"]}/operator_components'
         os.makedirs(save_dir, exist_ok=True)
 
